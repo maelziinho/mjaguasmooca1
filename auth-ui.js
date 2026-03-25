@@ -2,6 +2,7 @@
 
 let currentUser = null;
 let logoutTimer = null;
+let opcaoSelecionada = 'nao'; // padrão é NÃO
 
 // EXPORTA currentUser GLOBALMENTE
 window.currentUser = null;
@@ -29,12 +30,27 @@ window.addEventListener('load', function() {
     
     if (window.auth?.currentUser) {
         currentUser = window.auth.currentUser;
-        window.currentUser = currentUser; // SINCRONIZA
+        window.currentUser = currentUser;
         carregarDadosUsuario(currentUser.uid);
         atualizarInterfaceUsuario(currentUser);
         iniciarLogoutTimer();
     }
+    
+    // Inicializar botões após carregar
+    setTimeout(inicializarBotoesPrimeiraCompra, 500);
 });
+
+function inicializarBotoesPrimeiraCompra() {
+    const btnSim = document.getElementById('btnSim');
+    const btnNao = document.getElementById('btnNao');
+    const btnNaoTenho = document.getElementById('btnNaoTenho');
+    
+    if (btnSim && btnNao && btnNaoTenho) {
+        // Garantir que NÃO está selecionado por padrão
+        btnNao.classList.add('selecionado');
+        opcaoSelecionada = 'nao';
+    }
+}
 
 function restaurarInfoCapa() {
     const infoCapa = document.getElementById('informacoes');
@@ -46,8 +62,61 @@ function restaurarInfoCapa() {
     }
 }
 
+// ===== FUNÇÕES DOS BOTÕES SIM, NÃO, NÃO TENHO GALÃO ===== //
+function selecionarOpcao(opcao) {
+    const btnSim = document.getElementById('btnSim');
+    const btnNao = document.getElementById('btnNao');
+    const btnNaoTenho = document.getElementById('btnNaoTenho');
+    const galaoValidityGroup = document.getElementById('galaoValidityGroup');
+    
+    // Remover classe selecionado de todos e adicionar data-opcao
+    if (btnSim) {
+        btnSim.classList.remove('selecionado');
+        btnSim.setAttribute('data-opcao', 'sim');
+    }
+    if (btnNao) {
+        btnNao.classList.remove('selecionado');
+        btnNao.setAttribute('data-opcao', 'nao');
+    }
+    if (btnNaoTenho) {
+        btnNaoTenho.classList.remove('selecionado');
+        btnNaoTenho.setAttribute('data-opcao', 'naoTenho');
+    }
+    
+    opcaoSelecionada = opcao;
+    
+    if (opcao === 'sim') {
+        if (btnSim) btnSim.classList.add('selecionado');
+        if (galaoValidityGroup) galaoValidityGroup.style.display = 'block';
+    } 
+    else if (opcao === 'nao') {
+        if (btnNao) btnNao.classList.add('selecionado');
+        if (galaoValidityGroup) {
+            galaoValidityGroup.style.display = 'none';
+            const galaoValidity = document.getElementById('galaoValidity');
+            if (galaoValidity) galaoValidity.value = '';
+        }
+    }
+    else if (opcao === 'naoTenho') {
+        if (btnNaoTenho) btnNaoTenho.classList.add('selecionado');
+        if (galaoValidityGroup) {
+            galaoValidityGroup.style.display = 'none';
+            const galaoValidity = document.getElementById('galaoValidity');
+            if (galaoValidity) galaoValidity.value = '';
+        }
+        
+        // Verificar se tem galão completo no carrinho
+        setTimeout(() => {
+            const temGalaoCompleto = verificarGalaoCompleto();
+            if (!temGalaoCompleto) {
+                recomendarGalaoCompleto();
+            }
+        }, 500);
+    }
+}
+
 function verificarGalaoCompleto() {
-    if (typeof cart === 'undefined' || !cart) return false;
+    if (typeof cart === 'undefined' || !cart || cart.length === 0) return false;
     return cart.some(item => 
         item.categoria === 'Galão Completo' || 
         (item.nome && item.nome.toLowerCase().includes('galão completo'))
@@ -68,7 +137,10 @@ function recomendarGalaoCompleto() {
             </div>
         `,
         showConfirmButton: false,
-        showCloseButton: true
+        showCloseButton: true,
+        didOpen: () => {
+            document.querySelector('.swal2-container').style.zIndex = '9999999';
+        }
     });
 }
 
@@ -93,11 +165,9 @@ function irParaGalaoCompleto() {
 
 // ===== FUNÇÃO PARA ABRIR MENU MOBILE ===== //
 function abrirMenuMobile() {
-    // Remover menu antigo se existir
     const menuAntigo = document.getElementById('userMenuMobile');
     if (menuAntigo) menuAntigo.remove();
     
-    // Criar overlay
     const overlay = document.createElement('div');
     overlay.className = 'user-menu-mobile';
     overlay.id = 'userMenuMobile';
@@ -113,7 +183,6 @@ function abrirMenuMobile() {
         justify-content: flex-end;
     `;
     
-    // Criar conteúdo do menu
     const content = document.createElement('div');
     content.className = 'user-menu-content';
     content.style.cssText = `
@@ -130,7 +199,6 @@ function abrirMenuMobile() {
         animation: slideIn 0.3s ease-out;
     `;
     
-    // Obter email do usuário
     const userEmail = currentUser ? currentUser.email : 'Usuário';
     const userName = userEmail.split('@')[0];
     
@@ -179,7 +247,6 @@ function abrirMenuMobile() {
     overlay.appendChild(content);
     document.body.appendChild(overlay);
     
-    // Fechar ao clicar no overlay
     overlay.addEventListener('click', function(e) {
         if (e.target === overlay) {
             fecharMenuMobile();
@@ -192,7 +259,6 @@ function fecharMenuMobile() {
     if (menu) menu.remove();
 }
 
-// Modificar a função criarMenuUsuario para incluir suporte mobile
 function criarMenuUsuario() {
     if (document.getElementById('userMenuContainer')) return;
     
@@ -261,7 +327,6 @@ function criarMenuUsuario() {
         }
     });
     
-    // Modificar o evento de clique para suportar mobile
     userBtn.addEventListener('click', function(e) {
         e.stopPropagation();
         if (window.innerWidth <= 768) {
@@ -272,7 +337,6 @@ function criarMenuUsuario() {
     });
 }
 
-// Função para mostrar opções de endereço no checkout
 async function mostrarOpcoesEndereco() {
     if (!currentUser) return null;
     
@@ -342,61 +406,6 @@ window.selecionarEnderecoCheckout = function(index) {
     }
 };
 
-// Função para toggle do campo de validade do galão
-function toggleGalaoValidity() {
-    const galaoValidityGroup = document.getElementById('galaoValidityGroup');
-    const naoTenhoGalao = document.getElementById('naoTenhoGalao');
-    const firstTimeSim = document.getElementById('firstTimeSim');
-    
-    if (!firstTimeSim) return;
-    
-    if (firstTimeSim.checked) {
-        // Criar opção "Não tenho galão" se não existir
-        if (!document.getElementById('naoTenhoGalao')) {
-            const radioGroup = document.querySelector('.radio-group');
-            if (radioGroup) {
-                const naoTenhoDiv = document.createElement('div');
-                naoTenhoDiv.className = 'radio-option';
-                naoTenhoDiv.style.width = '100%';
-                naoTenhoDiv.innerHTML = `
-                    <input type="radio" id="naoTenhoGalao" name="temGalao" value="nao" onchange="toggleGalaoFields()">
-                    <label for="naoTenhoGalao" style="display: flex; align-items: center; justify-content: center; gap: 10px;">
-                        <i class="fas fa-times-circle" style="color: #dc3545;"></i> Não tenho galão
-                    </label>
-                `;
-                radioGroup.appendChild(naoTenhoDiv);
-            }
-        }
-        
-        if (naoTenhoGalao && naoTenhoGalao.checked) {
-            galaoValidityGroup.style.display = 'none';
-        } else {
-            galaoValidityGroup.style.display = 'block';
-        }
-    } else {
-        galaoValidityGroup.style.display = 'none';
-        const naoTenhoDiv = document.getElementById('naoTenhoGalao')?.parentNode;
-        if (naoTenhoDiv) naoTenhoDiv.remove();
-    }
-}
-
-function toggleGalaoFields() {
-    const galaoValidityGroup = document.getElementById('galaoValidityGroup');
-    const naoTenhoGalao = document.getElementById('naoTenhoGalao');
-    
-    if (naoTenhoGalao && naoTenhoGalao.checked) {
-        galaoValidityGroup.style.display = 'none';
-        setTimeout(() => {
-            if (!verificarGalaoCompleto()) {
-                recomendarGalaoCompleto();
-            }
-        }, 500);
-    } else {
-        galaoValidityGroup.style.display = 'block';
-    }
-}
-
-// Função para mostrar modal de login
 function mostrarModalLogin() {
     const modalExistente = document.getElementById('loginModal');
     if (modalExistente) modalExistente.remove();
@@ -411,64 +420,71 @@ function mostrarModalLogin() {
     `;
     
     modal.innerHTML = `
-        <div style="background: white; border-radius: 20px; padding: 30px; max-width: 400px; width: 90%; position: relative; box-shadow: 0 20px 60px rgba(0,0,0,0.3);">
+        <div style="background: white; border-radius: 20px; padding: 25px; max-width: 480px; width: 90%; position: relative; box-shadow: 0 20px 60px rgba(0,0,0,0.3); max-height: 90vh; overflow-y: auto;">
             <button onclick="this.closest('#loginModal').remove()" style="position: absolute; top: 15px; right: 15px; background: none; border: none; font-size: 24px; cursor: pointer; color: #666;">×</button>
             
-            <div style="text-align: center; margin-bottom: 30px;">
-                <img src="images/logomj.png" alt="MJ Águas" style="max-width: 120px; margin-bottom: 15px;">
-                <h2 style="color: #0066cc; margin: 0;">Bem-vindo(a)!</h2>
-                <p style="color: #666; margin-top: 5px;">Faça login ou crie sua conta</p>
+            <div style="text-align: center; margin-bottom: 20px;">
+                <img src="images/logomj.png" alt="MJ Águas" style="max-width: 100px; margin-bottom: 10px;">
+                <h2 style="color: #0066cc; margin: 0; font-size: 22px;">Bem-vindo(a)!</h2>
+                <p style="color: #666; margin-top: 5px; font-size: 13px;">Faça login ou crie sua conta</p>
             </div>
             
             <div style="display: flex; gap: 10px; margin-bottom: 20px; background: #f0f0f0; border-radius: 10px; padding: 5px;">
-                <button id="tabLoginBtn" onclick="mudarAba('login')" style="flex: 1; padding: 12px; background: #0066cc; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer;">Login</button>
-                <button id="tabRegistroBtn" onclick="mudarAba('registro')" style="flex: 1; padding: 12px; background: transparent; color: #666; border: none; border-radius: 8px; font-weight: bold; cursor: pointer;">Cadastro</button>
+                <button id="tabLoginBtn" onclick="mudarAba('login')" style="flex: 1; padding: 10px; background: #0066cc; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 14px;">Login</button>
+                <button id="tabRegistroBtn" onclick="mudarAba('registro')" style="flex: 1; padding: 10px; background: transparent; color: #666; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 14px;">Cadastro</button>
             </div>
             
             <div id="aba-login">
                 <div style="margin-bottom: 15px;">
-                    <label style="display: block; margin-bottom: 5px; color: #333; font-weight: 500;">E-mail</label>
+                    <label style="display: block; margin-bottom: 5px; color: #333; font-weight: 500; font-size: 13px;">E-mail</label>
                     <input type="email" id="loginEmail" placeholder="seu@email.com" style="width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 14px; box-sizing: border-box;">
                 </div>
                 <div style="margin-bottom: 20px;">
-                    <label style="display: block; margin-bottom: 5px; color: #333; font-weight: 500;">Senha</label>
+                    <label style="display: block; margin-bottom: 5px; color: #333; font-weight: 500; font-size: 13px;">Senha</label>
                     <input type="password" id="loginSenha" placeholder="••••••••" style="width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 14px; box-sizing: border-box;">
                 </div>
-                <button onclick="fazerLogin()" style="width: 100%; padding: 14px; background: #0066cc; color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 16px; cursor: pointer;">Entrar</button>
-                <div style="text-align: center; margin-top: 15px;">
-                    <a href="#" onclick="mostrarRecuperarSenha(); return false;" style="color: #0066cc; text-decoration: none; font-size: 14px;">Esqueci minha senha</a>
+                <button onclick="fazerLogin()" style="width: 100%; padding: 12px; background: #0066cc; color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 15px; cursor: pointer;">Entrar</button>
+                <div style="text-align: center; margin-top: 12px;">
+                    <a href="#" onclick="mostrarRecuperarSenha(); return false;" style="color: #0066cc; text-decoration: none; font-size: 12px;">Esqueci minha senha</a>
                 </div>
             </div>
             
             <div id="aba-registro" style="display: none;">
-                <div style="margin-bottom: 15px;">
-                    <label style="display: block; margin-bottom: 5px; color: #333; font-weight: 500;">Nome Completo</label>
-                    <input type="text" id="regNome" placeholder="Seu nome" style="width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 14px; box-sizing: border-box;">
+                <div style="margin-bottom: 12px;">
+                    <label style="display: block; margin-bottom: 5px; color: #333; font-weight: 500; font-size: 13px;">Nome Completo*</label>
+                    <input type="text" id="regNome" placeholder="Seu nome" style="width: 100%; padding: 10px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 14px; box-sizing: border-box;">
+                </div>
+                <div style="margin-bottom: 12px;">
+                    <label style="display: block; margin-bottom: 5px; color: #333; font-weight: 500; font-size: 13px;">E-mail*</label>
+                    <input type="email" id="regEmail" placeholder="seu@email.com" style="width: 100%; padding: 10px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 14px; box-sizing: border-box;">
+                </div>
+                <div style="margin-bottom: 12px;">
+                    <label style="display: block; margin-bottom: 5px; color: #333; font-weight: 500; font-size: 13px;">Telefone*</label>
+                    <input type="tel" id="regTelefone" placeholder="(11) 99999-9999" style="width: 100%; padding: 10px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 14px; box-sizing: border-box;">
+                </div>
+                
+                <!-- Endereço - OBRIGATÓRIO -->
+                <div style="margin-bottom: 12px;">
+                    <label style="display: block; margin-bottom: 5px; color: #333; font-weight: 500; font-size: 13px;">Endereço de Entrega*</label>
+                    <input type="text" id="regEndereco" placeholder="Rua, número, bairro, CEP" style="width: 100%; padding: 10px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 14px; box-sizing: border-box;">
+                    <small style="color: #666; font-size: 11px;">Informe seu endereço completo para entrega</small>
+                </div>
+                
+                <div style="margin-bottom: 12px;">
+                    <label style="display: block; margin-bottom: 5px; color: #333; font-weight: 500; font-size: 13px;">Senha*</label>
+                    <input type="password" id="regSenha" placeholder="Mínimo 6 caracteres" style="width: 100%; padding: 10px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 14px; box-sizing: border-box;">
                 </div>
                 <div style="margin-bottom: 15px;">
-                    <label style="display: block; margin-bottom: 5px; color: #333; font-weight: 500;">E-mail</label>
-                    <input type="email" id="regEmail" placeholder="seu@email.com" style="width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 14px; box-sizing: border-box;">
+                    <label style="display: block; margin-bottom: 5px; color: #333; font-weight: 500; font-size: 13px;">Confirmar Senha*</label>
+                    <input type="password" id="regSenhaConfirm" placeholder="Digite novamente" style="width: 100%; padding: 10px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 14px; box-sizing: border-box;">
                 </div>
-                <div style="margin-bottom: 15px;">
-                    <label style="display: block; margin-bottom: 5px; color: #333; font-weight: 500;">Telefone</label>
-                    <input type="tel" id="regTelefone" placeholder="(11) 99999-9999" style="width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 14px; box-sizing: border-box;">
-                </div>
-                <div style="margin-bottom: 15px;">
-                    <label style="display: block; margin-bottom: 5px; color: #333; font-weight: 500;">Senha</label>
-                    <input type="password" id="regSenha" placeholder="Mínimo 6 caracteres" style="width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 14px; box-sizing: border-box;">
-                </div>
-                <div style="margin-bottom: 20px;">
-                    <label style="display: block; margin-bottom: 5px; color: #333; font-weight: 500;">Confirmar Senha</label>
-                    <input type="password" id="regSenhaConfirm" placeholder="Digite novamente" style="width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 14px; box-sizing: border-box;">
-                </div>
-                <button onclick="registrarUsuario()" style="width: 100%; padding: 14px; background: #28a745; color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 16px; cursor: pointer;">Criar Conta</button>
+                <button onclick="registrarUsuario()" style="width: 100%; padding: 12px; background: #28a745; color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 15px; cursor: pointer; margin-bottom: 5px;">Criar Conta</button>
             </div>
         </div>
     `;
     
     document.body.appendChild(modal);
 }
-
 function mudarAba(aba) {
     const tabLogin = document.getElementById('tabLoginBtn');
     const tabRegistro = document.getElementById('tabRegistroBtn');
@@ -578,13 +594,13 @@ function fazerLogin() {
     window.signInWithEmailAndPassword(window.auth, email, senha)
         .then(async (userCredential) => {
             currentUser = userCredential.user;
-            window.currentUser = currentUser; // SINCRONIZAÇÃO CRÍTICA
+            window.currentUser = currentUser;
             
             await Swal.fire({
                 icon: 'success',
                 title: 'Login realizado!',
                 text: 'Bem-vindo(a) de volta!',
-                timer: 2000,
+                timer: 1500,
                 showConfirmButton: false,
                 didOpen: () => {
                     document.querySelector('.swal2-container').style.zIndex = '9999999';
@@ -624,14 +640,16 @@ function registrarUsuario() {
     const nome = document.getElementById('regNome')?.value;
     const email = document.getElementById('regEmail')?.value;
     const telefone = document.getElementById('regTelefone')?.value;
+    const endereco = document.getElementById('regEndereco')?.value;
     const senha = document.getElementById('regSenha')?.value;
     const senhaConfirm = document.getElementById('regSenhaConfirm')?.value;
     
-    if (!nome || !email || !telefone || !senha) {
+    // Validar todos os campos obrigatórios (incluindo endereço)
+    if (!nome || !email || !telefone || !endereco || !senha) {
         Swal.fire({
             icon: 'warning',
             title: 'Atenção',
-            text: 'Preencha todos os campos',
+            text: 'Preencha todos os campos obrigatórios (*)',
             confirmButtonColor: '#0066cc',
             didOpen: () => {
                 document.querySelector('.swal2-container').style.zIndex = '9999999';
@@ -670,21 +688,33 @@ function registrarUsuario() {
         .then(async (userCredential) => {
             const user = userCredential.user;
             currentUser = user;
-            window.currentUser = user; // SINCRONIZAÇÃO CRÍTICA
+            window.currentUser = user;
             
-            await window.setDoc(window.doc(window.db, 'clientes', user.uid), {
+            // Preparar dados do cliente com endereço obrigatório
+            const clienteData = {
                 nome: nome,
                 email: email,
                 telefone: telefone,
-                enderecos: [],
+                enderecos: [endereco.trim()],
                 enderecoSelecionado: 0,
                 dataCriacao: new Date().toISOString()
-            });
+            };
+            
+            await window.setDoc(window.doc(window.db, 'clientes', user.uid), clienteData);
+            
+            // Preencher campos do checkout
+            const checkoutName = document.getElementById('checkoutName');
+            const checkoutPhone = document.getElementById('checkoutPhone');
+            const checkoutAddress = document.getElementById('checkoutAddress');
+            
+            if (checkoutName) checkoutName.value = nome;
+            if (checkoutPhone) checkoutPhone.value = telefone;
+            if (checkoutAddress) checkoutAddress.value = endereco;
             
             await Swal.fire({
                 icon: 'success',
                 title: 'Conta criada!',
-                text: 'Bem-vindo(a) à MJ Águas!',
+                text: 'Bem-vindo(a) à MJ Águas! Seu endereço foi salvo.',
                 timer: 2000,
                 showConfirmButton: false,
                 didOpen: () => {
@@ -693,9 +723,6 @@ function registrarUsuario() {
             });
             
             document.getElementById('loginModal')?.remove();
-            
-            document.getElementById('checkoutName').value = nome;
-            document.getElementById('checkoutPhone').value = telefone;
             
             atualizarInterfaceUsuario(user);
             iniciarLogoutTimer();
@@ -719,7 +746,7 @@ function registrarUsuario() {
                 Swal.fire({
                     icon: 'error',
                     title: 'Erro',
-                    text: 'Erro ao criar conta',
+                    text: 'Erro ao criar conta: ' + error.message,
                     confirmButtonColor: '#0066cc',
                     didOpen: () => {
                         document.querySelector('.swal2-container').style.zIndex = '9999999';
@@ -733,14 +760,14 @@ function fazerLogout() {
     window.signOut(window.auth)
         .then(() => {
             currentUser = null;
-            window.currentUser = null; // SINCRONIZAÇÃO CRÍTICA
+            window.currentUser = null;
             if (logoutTimer) clearTimeout(logoutTimer);
             
             Swal.fire({
                 icon: 'success',
                 title: 'Logout realizado',
                 text: 'Volte sempre!',
-                timer: 2000,
+                timer: 1500,
                 showConfirmButton: false,
                 didOpen: () => {
                     document.querySelector('.swal2-container').style.zIndex = '9999999';
@@ -776,12 +803,16 @@ async function carregarDadosUsuario(uid) {
         
         if (docSnap.exists()) {
             const dados = docSnap.data();
-            document.getElementById('checkoutName').value = dados.nome || '';
-            document.getElementById('checkoutPhone').value = dados.telefone || '';
+            const nomeInput = document.getElementById('checkoutName');
+            const phoneInput = document.getElementById('checkoutPhone');
+            const addressInput = document.getElementById('checkoutAddress');
             
-            if (dados.enderecos && dados.enderecos.length > 0) {
+            if (nomeInput) nomeInput.value = dados.nome || '';
+            if (phoneInput) phoneInput.value = dados.telefone || '';
+            
+            if (dados.enderecos && dados.enderecos.length > 0 && addressInput) {
                 const idx = dados.enderecoSelecionado || 0;
-                document.getElementById('checkoutAddress').value = dados.enderecos[idx];
+                addressInput.value = dados.enderecos[idx];
             }
         }
     } catch (error) {
@@ -980,12 +1011,10 @@ window.repetirPedido = async function(pedidoId) {
         
         const p = docSnap.data();
         
-        // Limpar carrinho atual
         if (typeof cart !== 'undefined') {
             cart.length = 0;
         }
         
-        // Adicionar itens do pedido anterior
         if (p.itens && Array.isArray(p.itens)) {
             p.itens.forEach(item => {
                 const produtoOriginal = window.produtos?.find(prod => prod.id === item.id);
@@ -1009,7 +1038,6 @@ window.repetirPedido = async function(pedidoId) {
             });
         }
         
-        // Atualizar interface do carrinho
         if (typeof window.updateCartPage === 'function') {
             window.updateCartPage();
         }
@@ -1046,33 +1074,506 @@ window.repetirPedido = async function(pedidoId) {
     }
 };
 
-// Funções de perfil (dados, endereços, etc.) - mantidas iguais
+// ===== FUNÇÕES DE PERFIL COMPLETAS COM REMOÇÃO DE BARRA DE ROLAGEM ===== //
 async function mostrarDados() {
-    // ... (código existente, sem alterações)
+    if (!currentUser) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Atenção',
+            text: 'Faça login primeiro',
+            confirmButtonColor: '#0066cc',
+            didOpen: () => {
+                document.querySelector('.swal2-container').style.zIndex = '9999999';
+            }
+        });
+        return;
+    }
+    
+    try {
+        const docRef = window.doc(window.db, 'clientes', currentUser.uid);
+        let docSnap = await window.getDoc(docRef);
+        
+        if (!docSnap.exists()) {
+            await window.setDoc(docRef, { 
+                nome: '', 
+                email: currentUser.email, 
+                telefone: '' 
+            });
+            docSnap = await window.getDoc(docRef);
+        }
+        
+        const dados = docSnap.data();
+        
+        const { value: formValues } = await Swal.fire({
+            title: 'Meus Dados',
+            html: `
+                <div style="margin-bottom: 20px; text-align: left;">
+                    <label style="display: block; margin-bottom: 8px; color: #333; font-weight: 500;">Nome Completo</label>
+                    <input type="text" id="editNome" value="${dados.nome || ''}" placeholder="Seu nome" style="width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 8px; box-sizing: border-box; font-size: 14px;">
+                </div>
+                <div style="margin-bottom: 20px; text-align: left;">
+                    <label style="display: block; margin-bottom: 8px; color: #333; font-weight: 500;">E-mail</label>
+                    <input type="email" id="editEmail" value="${currentUser.email}" placeholder="seu@email.com" style="width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 8px; box-sizing: border-box; background: #f5f5f5; font-size: 14px;" readonly>
+                </div>
+                <div style="margin-bottom: 10px; text-align: left;">
+                    <label style="display: block; margin-bottom: 8px; color: #333; font-weight: 500;">Telefone</label>
+                    <input type="tel" id="editTelefone" value="${dados.telefone || ''}" placeholder="(11) 99999-9999" style="width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 8px; box-sizing: border-box; font-size: 14px;">
+                </div>
+            `,
+            showCancelButton: true,
+            confirmButtonText: 'Salvar',
+            cancelButtonText: 'Cancelar',
+            confirmButtonColor: '#0066cc',
+            width: '450px',
+            padding: '25px',
+            scrollbarPadding: false,
+            backdrop: true,
+            allowOutsideClick: true,
+            customClass: {
+                popup: 'swal2-popup-custom',
+                container: 'swal2-container-custom'
+            },
+            didOpen: () => {
+                const container = document.querySelector('.swal2-container');
+                if (container) {
+                    container.style.overflow = 'hidden';
+                    container.style.paddingRight = '0';
+                    container.style.display = 'flex';
+                    container.style.justifyContent = 'center';
+                    container.style.alignItems = 'center';
+                }
+                const popup = document.querySelector('.swal2-popup');
+                if (popup) {
+                    popup.style.overflow = 'visible';
+                    popup.style.maxHeight = 'none';
+                    popup.style.margin = '0 auto';
+                }
+                const htmlContainer = document.querySelector('.swal2-html-container');
+                if (htmlContainer) {
+                    htmlContainer.style.overflow = 'visible';
+                    htmlContainer.style.maxHeight = 'none';
+                    htmlContainer.style.padding = '0';
+                }
+            },
+            preConfirm: () => {
+                const nome = document.getElementById('editNome').value;
+                const telefone = document.getElementById('editTelefone').value;
+                
+                if (!nome || !telefone) {
+                    Swal.showValidationMessage('Nome e telefone são obrigatórios');
+                    return false;
+                }
+                
+                return { nome, telefone };
+            }
+        });
+        
+        if (formValues) {
+            await window.setDoc(docRef, { 
+                nome: formValues.nome, 
+                telefone: formValues.telefone 
+            }, { merge: true });
+            
+            const nomeInput = document.getElementById('checkoutName');
+            const phoneInput = document.getElementById('checkoutPhone');
+            if (nomeInput) nomeInput.value = formValues.nome;
+            if (phoneInput) phoneInput.value = formValues.telefone;
+            
+            Swal.fire({
+                icon: 'success',
+                title: 'Dados atualizados!',
+                timer: 2000,
+                showConfirmButton: false
+            });
+        }
+        
+    } catch (error) {
+        console.error('Erro ao mostrar dados:', error);
+        Swal.fire({
+            icon: 'error',
+            title: 'Erro',
+            text: 'Não foi possível carregar os dados',
+            confirmButtonColor: '#0066cc'
+        });
+    }
 }
 
 async function mostrarEnderecos() {
-    // ... (código existente, sem alterações)
+    if (!currentUser) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Atenção',
+            text: 'Faça login primeiro',
+            confirmButtonColor: '#0066cc'
+        });
+        return;
+    }
+    
+    try {
+        const docRef = window.doc(window.db, 'clientes', currentUser.uid);
+        let docSnap = await window.getDoc(docRef);
+        
+        if (!docSnap.exists()) {
+            await window.setDoc(docRef, { enderecos: [] });
+            docSnap = await window.getDoc(docRef);
+        }
+        
+        const dados = docSnap.data();
+        const enderecos = dados.enderecos || [];
+        const enderecoSelecionado = dados.enderecoSelecionado || 0;
+        
+        let enderecosHtml = '';
+        enderecos.forEach((end, i) => {
+            enderecosHtml += `
+                <div style="border: 2px solid ${i === enderecoSelecionado ? '#0066cc' : '#e0e0e0'}; border-radius: 10px; padding: 15px; margin-bottom: 10px; cursor: pointer;" onclick="selecionarEndereco(${i})" id="endereco-${i}">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <span style="background: ${i === enderecoSelecionado ? '#0066cc' : '#e0e0e0'}; color: ${i === enderecoSelecionado ? 'white' : '#666'}; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">${i+1}</span>
+                                <strong>${i === enderecoSelecionado ? 'Endereço Principal' : `Endereço ${i+1}`}</strong>
+                            </div>
+                            <p style="margin: 10px 0 0 34px; color: #333;">${end}</p>
+                        </div>
+                        <button onclick="removerEndereco(${i}); event.stopPropagation();" style="background: #dc3545; color: white; border: none; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center;" title="Remover">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+        });
+        
+        const { value: formValues } = await Swal.fire({
+            title: 'Meus Endereços',
+            html: `
+                <div style="max-height: 400px; overflow-y: auto; margin-bottom: 20px; padding-right: 5px;">
+                    ${enderecos.length === 0 ? 
+                        '<p style="text-align: center; color: #666; padding: 30px;">Nenhum endereço cadastrado</p>' : 
+                        enderecosHtml
+                    }
+                </div>
+                <div style="margin-top: 20px; padding-top: 20px; border-top: 2px solid #e0e0e0;">
+                    <h4 style="margin-bottom: 15px; color: #0066cc;">Adicionar Novo Endereço</h4>
+                    <input type="text" id="rua" placeholder="Rua" style="width: 100%; padding: 12px; margin-bottom: 10px; border: 2px solid #e0e0e0; border-radius: 8px; box-sizing: border-box;">
+                    <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                        <input type="text" id="numero" placeholder="Número" style="flex: 1; padding: 12px; border: 2px solid #e0e0e0; border-radius: 8px; box-sizing: border-box;">
+                        <input type="text" id="complemento" placeholder="Complemento" style="flex: 2; padding: 12px; border: 2px solid #e0e0e0; border-radius: 8px; box-sizing: border-box;">
+                    </div>
+                    <input type="text" id="bairro" placeholder="Bairro" style="width: 100%; padding: 12px; margin-bottom: 10px; border: 2px solid #e0e0e0; border-radius: 8px; box-sizing: border-box;">
+                    <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                        <input type="text" id="cidade" placeholder="Cidade" value="São Paulo" style="flex: 2; padding: 12px; border: 2px solid #e0e0e0; border-radius: 8px; box-sizing: border-box;">
+                        <input type="text" id="cep" placeholder="CEP" style="flex: 1; padding: 12px; border: 2px solid #e0e0e0; border-radius: 8px; box-sizing: border-box;">
+                    </div>
+                    <div style="display: flex; gap: 20px; margin-bottom: 10px;">
+                        <label><input type="radio" name="tipoEndereco" value="Residencial" checked> Residencial</label>
+                        <label><input type="radio" name="tipoEndereco" value="Comercial"> Comercial</label>
+                    </div>
+                </div>
+            `,
+            showCancelButton: true,
+            confirmButtonText: 'Adicionar',
+            cancelButtonText: 'Fechar',
+            confirmButtonColor: '#28a745',
+            width: 550,
+            padding: '20px',
+            scrollbarPadding: false,
+            backdrop: true,
+            allowOutsideClick: true,
+            didOpen: () => {
+                const container = document.querySelector('.swal2-container');
+                if (container) {
+                    container.style.overflow = 'hidden';
+                    container.style.paddingRight = '0';
+                }
+                const popup = document.querySelector('.swal2-popup');
+                if (popup) {
+                    popup.style.overflow = 'visible';
+                    popup.style.maxHeight = 'none';
+                }
+            },
+            preConfirm: () => {
+                const rua = document.getElementById('rua')?.value;
+                const numero = document.getElementById('numero')?.value;
+                
+                if (rua && numero) {
+                    const complemento = document.getElementById('complemento')?.value;
+                    const bairro = document.getElementById('bairro')?.value;
+                    const cidade = document.getElementById('cidade')?.value;
+                    const cep = document.getElementById('cep')?.value;
+                    const tipo = document.querySelector('input[name="tipoEndereco"]:checked')?.value;
+                    
+                    let novoEndereco = `${rua}, ${numero}`;
+                    if (complemento) novoEndereco += ` - ${complemento}`;
+                    if (bairro) novoEndereco += `, ${bairro}`;
+                    if (cidade) novoEndereco += `, ${cidade}`;
+                    if (cep) novoEndereco += ` - CEP: ${cep}`;
+                    novoEndereco += ` (${tipo})`;
+                    
+                    return { novoEndereco };
+                }
+                return null;
+            }
+        });
+        
+        if (formValues && formValues.novoEndereco) {
+            enderecos.push(formValues.novoEndereco);
+            await window.setDoc(docRef, { enderecos: enderecos }, { merge: true });
+            
+            Swal.fire({
+                icon: 'success',
+                title: 'Endereço adicionado!',
+                timer: 1500,
+                showConfirmButton: false
+            });
+            
+            mostrarEnderecos();
+        }
+        
+    } catch (error) {
+        console.error('Erro ao mostrar endereços:', error);
+        Swal.fire({
+            icon: 'error',
+            title: 'Erro',
+            text: 'Não foi possível carregar os endereços',
+            confirmButtonColor: '#0066cc'
+        });
+    }
 }
 
 async function selecionarEndereco(index) {
-    // ... (código existente, sem alterações)
+    try {
+        const docRef = window.doc(window.db, 'clientes', currentUser.uid);
+        await window.setDoc(docRef, { enderecoSelecionado: index }, { merge: true });
+        
+        const docSnap = await window.getDoc(docRef);
+        const dados = docSnap.data();
+        const addressInput = document.getElementById('checkoutAddress');
+        if (addressInput) addressInput.value = dados.enderecos[index];
+        
+        dados.enderecos.forEach((_, i) => {
+            const el = document.getElementById(`endereco-${i}`);
+            if (el) el.style.borderColor = i === index ? '#0066cc' : '#e0e0e0';
+        });
+        
+        Swal.fire({
+            icon: 'success',
+            title: 'Endereço selecionado!',
+            text: 'Este endereço será usado no checkout',
+            timer: 1500,
+            showConfirmButton: false
+        });
+        
+    } catch (error) {
+        console.error('Erro ao selecionar endereço:', error);
+        Swal.fire({
+            icon: 'error',
+            title: 'Erro',
+            text: 'Não foi possível selecionar o endereço',
+            confirmButtonColor: '#0066cc'
+        });
+    }
 }
 
 async function removerEndereco(index) {
-    // ... (código existente, sem alterações)
+    try {
+        const docRef = window.doc(window.db, 'clientes', currentUser.uid);
+        const docSnap = await window.getDoc(docRef);
+        const dados = docSnap.data();
+        let enderecos = dados.enderecos || [];
+        
+        if (enderecos.length <= 1) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Atenção',
+                text: 'Você precisa de pelo menos um endereço',
+                confirmButtonColor: '#0066cc'
+            });
+            return;
+        }
+        
+        enderecos.splice(index, 1);
+        
+        let enderecoSelecionado = dados.enderecoSelecionado || 0;
+        if (enderecoSelecionado >= enderecos.length) {
+            enderecoSelecionado = 0;
+        } else if (enderecoSelecionado > index) {
+            enderecoSelecionado--;
+        }
+        
+        await window.setDoc(docRef, { 
+            enderecos: enderecos,
+            enderecoSelecionado: enderecoSelecionado
+        }, { merge: true });
+        
+        if (enderecos.length > 0) {
+            const addressInput = document.getElementById('checkoutAddress');
+            if (addressInput) addressInput.value = enderecos[enderecoSelecionado];
+        }
+        
+        Swal.fire({
+            icon: 'success',
+            title: 'Endereço removido!',
+            timer: 1500,
+            showConfirmButton: false
+        });
+        
+        mostrarEnderecos();
+        
+    } catch (error) {
+        console.error('Erro ao remover endereço:', error);
+        Swal.fire({
+            icon: 'error',
+            title: 'Erro',
+            text: 'Não foi possível remover o endereço',
+            confirmButtonColor: '#0066cc'
+        });
+    }
 }
 
 function mostrarAlterarSenha() {
-    // ... (código existente, sem alterações)
+    if (!currentUser) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Atenção',
+            text: 'Faça login primeiro',
+            confirmButtonColor: '#0066cc'
+        });
+        return;
+    }
+    
+    Swal.fire({
+        title: 'Alterar Senha',
+        html: `
+            <div style="margin-bottom: 15px;">
+                <input type="password" id="novaSenha" class="swal2-input" placeholder="Nova senha (mínimo 6 caracteres)">
+            </div>
+            <div>
+                <input type="password" id="confirmSenha" class="swal2-input" placeholder="Confirmar nova senha">
+            </div>
+        `,
+        showCancelButton: true,
+        confirmButtonText: 'Alterar',
+        cancelButtonText: 'Cancelar',
+        confirmButtonColor: '#0066cc',
+        width: 500,
+        padding: '20px',
+        didOpen: () => {
+            const container = document.querySelector('.swal2-container');
+            if (container) {
+                container.style.overflow = 'hidden';
+            }
+        },
+        preConfirm: async () => {
+            const nova = document.getElementById('novaSenha').value;
+            const confirma = document.getElementById('confirmSenha').value;
+            
+            if (nova.length < 6) {
+                Swal.showValidationMessage('Mínimo 6 caracteres');
+                return false;
+            }
+            if (nova !== confirma) {
+                Swal.showValidationMessage('As senhas não coincidem');
+                return false;
+            }
+            
+            try {
+                await window.updatePassword(currentUser, nova);
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Senha alterada!',
+                    timer: 1500,
+                    showConfirmButton: false
+                });
+            } catch (error) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Erro',
+                    text: 'Não foi possível alterar a senha',
+                    confirmButtonColor: '#0066cc'
+                });
+            }
+        }
+    });
 }
 
 function confirmarExclusaoConta() {
-    // ... (código existente, sem alterações)
+    if (!currentUser) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Atenção',
+            text: 'Faça login primeiro',
+            confirmButtonColor: '#0066cc'
+        });
+        return;
+    }
+    
+    Swal.fire({
+        title: 'Excluir conta?',
+        text: 'Esta ação NÃO pode ser desfeita! Todos os dados serão apagados permanentemente.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc3545',
+        confirmButtonText: 'Sim, excluir',
+        cancelButtonText: 'Cancelar'
+    }).then(async (result) => {
+        if (result.isConfirmed) {
+            await excluirConta();
+        }
+    });
 }
 
 async function excluirConta() {
-    // ... (código existente, sem alterações)
+    try {
+        Swal.fire({
+            title: 'Excluindo conta...',
+            allowOutsideClick: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+        
+        const q = window.query(
+            window.collection(window.db, 'pedidos'), 
+            window.where('uid', '==', currentUser.uid)
+        );
+        const querySnapshot = await window.getDocs(q);
+        
+        const deletePromises = [];
+        querySnapshot.forEach(doc => {
+            deletePromises.push(window.deleteDoc(doc.ref));
+        });
+        await Promise.all(deletePromises);
+        
+        await window.deleteDoc(window.doc(window.db, 'clientes', currentUser.uid));
+        await window.deleteUser(currentUser);
+        
+        Swal.fire({
+            icon: 'success',
+            title: 'Conta excluída',
+            text: 'Sua conta foi removida com sucesso',
+            timer: 2000,
+            showConfirmButton: false
+        });
+        
+        currentUser = null;
+        window.currentUser = null;
+        atualizarInterfaceUsuario(null);
+        
+        document.getElementById('header').style.display = 'block';
+        document.getElementById('inicio').style.display = 'none';
+        document.getElementById('cartPage').style.display = 'none';
+        document.getElementById('checkoutPage').style.display = 'none';
+        
+        restaurarInfoCapa();
+        
+    } catch (error) {
+        console.error('Erro ao excluir conta:', error);
+        Swal.fire({
+            icon: 'error',
+            title: 'Erro',
+            text: 'Não foi possível excluir a conta. Faça login novamente.',
+            confirmButtonColor: '#0066cc'
+        });
+    }
 }
 
 function continuarCheckoutConvidado() {
@@ -1090,9 +1591,18 @@ function continuarCheckoutConvidado() {
     document.getElementById('paymentSection').style.display = 'none';
     document.getElementById('confirmSection').style.display = 'none';
     
-    document.getElementById('step1').classList.add('active');
-    document.getElementById('step2').classList.remove('active');
-    document.getElementById('step3').classList.remove('active');
+    const step1 = document.getElementById('step1');
+    const step2 = document.getElementById('step2');
+    const step3 = document.getElementById('step3');
+    
+    if (step1) step1.classList.add('active');
+    if (step2) step2.classList.remove('active');
+    if (step3) step3.classList.remove('active');
+    
+    // Configurar agendamento
+    if (typeof window.setupScheduleInput === 'function') {
+        setTimeout(window.setupScheduleInput, 100);
+    }
 }
 
 const originalProceedToCheckout = window.proceedToCheckout;
@@ -1130,37 +1640,36 @@ window.proceedToCheckout = async function() {
         return;
     }
     
-    const firstTimeSim = document.getElementById('firstTimeSim');
-    const naoTenhoGalao = document.getElementById('naoTenhoGalao');
+    // Validação com os novos botões
+    if (opcaoSelecionada === 'sim') {
+        const galaoValidity = document.getElementById('galaoValidity')?.value;
+        if (!galaoValidity) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Atenção',
+                text: 'Informe a data de validade do seu galão',
+                confirmButtonColor: '#0066cc',
+                didOpen: () => {
+                    document.querySelector('.swal2-container').style.zIndex = '9999999';
+                }
+            });
+            return;
+        }
+    }
     
-    if (firstTimeSim && firstTimeSim.checked) {
-        if (naoTenhoGalao && naoTenhoGalao.checked) {
-            const temGalaoCompleto = verificarGalaoCompleto();
-            if (!temGalaoCompleto) {
-                recomendarGalaoCompleto();
-                return;
-            }
-        } else {
-            const galaoValidity = document.getElementById('galaoValidity').value;
-            if (!galaoValidity) {
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'Atenção',
-                    text: 'Informe a data de validade do seu galão',
-                    confirmButtonColor: '#0066cc',
-                    didOpen: () => {
-                        document.querySelector('.swal2-container').style.zIndex = '9999999';
-                    }
-                });
-                return;
-            }
+    if (opcaoSelecionada === 'naoTenho') {
+        const temGalaoCompleto = verificarGalaoCompleto();
+        if (!temGalaoCompleto) {
+            recomendarGalaoCompleto();
+            return;
         }
     }
     
     if (currentUser) {
         const enderecoEscolhido = await mostrarOpcoesEndereco();
         if (enderecoEscolhido) {
-            document.getElementById('checkoutAddress').value = enderecoEscolhido;
+            const addressInput = document.getElementById('checkoutAddress');
+            if (addressInput) addressInput.value = enderecoEscolhido;
         }
     }
     
@@ -1190,7 +1699,7 @@ function atualizarInterfaceUsuario(user) {
 if (window.auth) {
     window.auth.onAuthStateChanged(async (user) => {
         currentUser = user;
-        window.currentUser = user; // SINCRONIZAÇÃO CRÍTICA
+        window.currentUser = user;
         
         if (user) {
             await carregarDadosUsuario(user.uid);
@@ -1198,6 +1707,7 @@ if (window.auth) {
         }
         atualizarInterfaceUsuario(user);
         setTimeout(restaurarInfoCapa, 500);
+        setTimeout(inicializarBotoesPrimeiraCompra, 500);
     });
 } else {
     console.error('❌ auth não encontrado!');
@@ -1217,7 +1727,6 @@ window.mostrarEnderecos = mostrarEnderecos;
 window.mostrarAlterarSenha = mostrarAlterarSenha;
 window.confirmarExclusaoConta = confirmarExclusaoConta;
 window.continuarCheckoutConvidado = continuarCheckoutConvidado;
-window.toggleGalaoValidity = toggleGalaoValidity;
 window.selecionarEndereco = selecionarEndereco;
 window.removerEndereco = removerEndereco;
 window.irParaGalaoCompleto = irParaGalaoCompleto;
@@ -1225,3 +1734,5 @@ window.togglePedido = togglePedido;
 window.repetirPedido = repetirPedido;
 window.abrirMenuMobile = abrirMenuMobile;
 window.fecharMenuMobile = fecharMenuMobile;
+window.selecionarOpcao = selecionarOpcao;
+window.verificarGalaoCompleto = verificarGalaoCompleto;
