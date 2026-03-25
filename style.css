@@ -219,31 +219,12 @@ body {
 
 /* Estilo específico para o botão do carrinho */
 .categoria-button:last-child {
-    background: #28a745; /* Verde para o carrinho */
-    margin-left: 20px; /* Afasta o carrinho dos outros ícones */
+    background: #28a745;
+    margin-left: 20px;
 }
 
 .categoria-button:last-child:hover {
-    background: #1e7e34; /* Verde mais escuro no hover */
-}
-
-.cart-btn {
-    background: #28a745;
-}
-
-.cart-btn span {
-    position: absolute;
-    top: -5px;
-    right: -5px;
-    background: red;
-    color: white;
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    font-size: 0.7em;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    background: #1e7e34;
 }
 
 /* Seção de categoria */
@@ -257,14 +238,6 @@ body {
     color: #0066cc;
     margin: 0 0 15px 0;
     font-size: 1.8em;
-}
-
-.subcategorias-container {
-    min-height: 40px;
-    padding: 10px 0;
-    /* Espaço reservado para futuras subcategorias */
-    border-top: 1px dashed #ddd;
-    margin-top: 10px;
 }
 
 /* Produtos */
@@ -290,8 +263,8 @@ body {
 
 .produto img {
     width: 100%;
-    height: auto; /* Altura ajustável conforme a largura */
-    max-height: 200px; /* Limite máximo (opcional) */
+    height: auto;
+    max-height: 200px;
 }
 
 .produto-content {
@@ -334,10 +307,6 @@ body {
 
 .produto button:hover {
     background: #004d99;
-}
-
-.produto button i {
-    font-size: 1.1em;
 }
 
 /* Página do Carrinho */
@@ -395,7 +364,7 @@ body {
     border-radius: 8px;
     margin-bottom: 15px;
     transition: all 0.3s;
-    flex-wrap: nowrap; /* Garante que os itens fiquem na mesma linha */
+    flex-wrap: nowrap;
 }
 
 .cart-item:hover {
@@ -420,7 +389,7 @@ body {
     display: flex;
     align-items: center;
     gap: 10px;
-    margin-left: auto; /* Empurra para a direita */
+    margin-left: auto;
 }
 
 .quantity-btn {
@@ -799,84 +768,6 @@ body {
     margin-top: 15px;
 }
 
-/* Confirmação */
-.order-confirmation {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: white;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    text-align: center;
-    padding: 20px;
-    z-index: 1001;
-}
-
-.order-confirmation h1 {
-    color: #0066cc;
-    margin-bottom: 20px;
-}
-
-.confirmation-text {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    margin: 15px 0;
-}
-
-.confirmation-message,
-.confirmation-time {
-    margin: 5px 0;
-    text-align: center;
-    width: 100%;
-    max-width: 300px;
-}
-
-.social-media {
-    margin: 20px 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-}
-
-.follow-us {
-    margin: 0 0 10px 0;
-    font-weight: bold;
-    color: #333;
-}
-
-.social-icons {
-    margin: 10px 0;
-    display: flex;
-    justify-content: center;
-    gap: 20px;
-}
-
-.social-icons a {
-    color: #0066cc;
-    font-size: 1.8em;
-    transition: all 0.3s;
-}
-
-.social-icons a:hover {
-    transform: scale(1.1);
-}
-
-.order-confirmation button {
-    background:  #0066cc;
-    color: white;
-    border: none;
-    padding: 15px 15px;
-    cursor: pointer;
-    border-radius: 5px;
-    margin-top: 60px;
-    font-size: 1em;
-}
-
 /* Assistente Virtual */
 .assistente {
     position: fixed;
@@ -980,234 +871,7 @@ body {
     to { transform: translateY(0) rotate(0); opacity: 1; }
 }
 
-/* Responsivo original */
-@media (max-width: 768px) {
-    .cart-content {
-        flex-direction: column;
-    }
-    
-    .order-summary {
-        width: 100%;
-    }
-    
-    .delivery-options, .payment-options {
-        flex-direction: column;
-    }
-    
-    .checkout-steps .step {
-        font-size: 0.8em;
-        padding: 5px 10px;
-    }
-}
-
-@media (max-width: 480px) {
-    .cart-item {
-        align-items: flex-start;
-        gap: 10px;
-    }
-    
-    .item-quantity {
-        margin-left: auto;
-    }
-    
-    .remove-item {
-        margin-left: 15px;
-    }
-    
-    .header-slogan {
-        font-size: 2em;
-    }
-    
-    .grid {
-        grid-template-columns: 1fr 1fr;
-    }
-    
-    .produto button {
-        padding: 8px;
-        font-size: 0.8em;
-    }
-}
-
-
-/* Prevenção de zoom indesejado em dispositivos móveis */
-* {
-    -webkit-touch-callout: none;
-    -webkit-user-select: none;
-    -khtml-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
-    user-select: none;
-    -webkit-tap-highlight-color: transparent;
-}
-
-/* Permitir seleção de texto em campos de input e textarea */
-input, textarea {
-    -webkit-user-select: text;
-    -khtml-user-select: text;
-    -moz-user-select: text;
-    -ms-user-select: text;
-    user-select: text;
-}
-
-/* Melhorar a experiência de toque em botões */
-button, .categoria-button, .catalog-button, .btn-abrir-assistente {
-    touch-action: manipulation;
-    -webkit-tap-highlight-color: rgba(0, 0, 0, 0.1);
-}
-
-/* Prevenir zoom duplo-toque em elementos específicos */
-.header, .inicio, .cart-page, .checkout-page {
-    touch-action: manipulation;
-}
-
-.remove-item i {
-    font-size: 1.2em;
-    padding: 5px;
-    border-radius: 50%;
-    transition: background-color 0.3s;
-}
-
-.remove-item:hover i {
-    background-color: rgba(255, 0, 0, 0.1);
-}
-
-.item-quantity span {
-    min-width: 20px;
-    text-align: center;
-}
-
-/* Seção de CEP para Frete */
-.delivery-cep-section {
-    display: flex;
-    gap: 10px;
-    margin: 20px 0;
-    padding: 15px;
-    background: #fff;
-    border-radius: 8px;
-    border: 1px dashed #ddd;
-}
-
-.delivery-cep-section input {
-    flex: 1;
-    padding: 8px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-}
-
-.delivery-cep-section button {
-    background: #0066cc;
-    color: white;
-    border: none;
-    padding: 8px 15px;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: background-color 0.3s ease;
-}
-
-.delivery-cep-section button:hover {
-    background: #004d99;
-}
-
-/* Estilos para primeira compra e galão */
-.radio-group {
-    display: flex;
-    gap: 15px;
-    margin: 10px 0;
-    flex-wrap: wrap;
-}
-
-.radio-option {
-    flex: 1;
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    padding: 12px;
-    cursor: pointer;
-    transition: all 0.3s;
-    text-align: center;
-    box-sizing: border-box;
-}
-
-.radio-option:hover {
-    border-color: #0066cc;
-}
-
-.radio-option input {
-    display: none;
-}
-
-.radio-option input:checked + label {
-    color: #0066cc;
-    font-weight: bold;
-}
-
-.radio-option input:checked ~ * {
-    color: #0066cc;
-}
-
-.radio-option label {
-    display: block;
-    cursor: pointer;
-    margin: 0;
-}
-
-.radio-option:has(input:checked) {
-    border-color: #0066cc;
-    background: #f0f8ff;
-}
-
-#galaoValidityGroup small {
-    display: block;
-    color: #666;
-    margin-top: 5px;
-    font-size: 0.9em;
-}
-
-/* Estilos para produtos indisponíveis */
-.produto.indisponivel {
-    opacity: 0.7;
-    position: relative;
-}
-
-.produto.indisponivel::after {
-    content: 'Indisponível';
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    background: #ff4444;
-    color: white;
-    padding: 5px 10px;
-    border-radius: 4px;
-    font-size: 0.8em;
-    font-weight: bold;
-}
-
-.produto.indisponivel button {
-    background: #ff9800;
-    cursor: pointer;
-}
-
-.produto.indisponivel button:hover {
-    background: #e68900;
-}
-
-.avise-me-btn {
-    width: 100%;
-    padding: 10px;
-    background: #ff9800;
-    color: white;
-    border: none;
-    border-radius: 8px;
-    font-size: 0.95em;
-    cursor: pointer;
-    transition: all 0.3s;
-}
-
-.avise-me-btn:hover {
-    background: #e68900;
-}
-
-/* ========== ESTILOS DE AUTENTICACAO ========== */
-
+/* ===== ESTILOS DE AUTENTICACAO ===== */
 .btn-header-login {
     position: absolute;
     top: 20px;
@@ -1254,414 +918,61 @@ button, .categoria-button, .catalog-button, .btn-abrir-assistente {
     overflow-y: auto;
 }
 
-.modal-close {
+/* ===== ESTILOS PARA PRODUTOS INDISPONÍVEIS ===== */
+.produto.indisponivel {
+    opacity: 0.7;
+    position: relative;
+}
+
+.produto.indisponivel::after {
+    content: 'Indisponível';
     position: absolute;
-    top: 15px;
-    right: 15px;
-    background: none;
-    border: none;
-    font-size: 24px;
-    cursor: pointer;
-    color: #666;
-}
-
-.login-tabs,
-.conta-tabs {
-    display: flex;
-    gap: 10px;
-    margin-bottom: 20px;
-    border-bottom: 2px solid #eee;
-}
-
-.tab-button {
-    padding: 10px 15px;
-    background: none;
-    border: none;
-    cursor: pointer;
-    font-weight: 500;
-    color: #666;
-    border-bottom: 3px solid transparent;
-    transition: all 0.3s ease;
-}
-
-.tab-button.active {
-    color: #0066cc;
-    border-bottom-color: #0066cc;
-}
-
-.tab-content {
-    display: none;
-}
-
-.tab-content.active {
-    display: block;
-}
-
-.tab-content h2 {
-    margin-bottom: 20px;
-    color: #333;
-}
-
-.input-field {
-    width: 100%;
-    padding: 12px;
-    margin-bottom: 15px;
-    border: 1px solid #ddd;
-    border-radius: 5px;
-    font-size: 14px;
-    box-sizing: border-box;
-}
-
-.input-field:focus {
-    outline: none;
-    border-color: #0066cc;
-    box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1);
-}
-
-.btn-primary,
-.btn-secondary,
-.btn-danger {
-    width: 100%;
-    padding: 12px;
-    border: none;
-    border-radius: 5px;
-    font-weight: bold;
-    cursor: pointer;
-    font-size: 14px;
-    transition: all 0.3s ease;
-}
-
-.btn-primary {
-    background: #0066cc;
+    top: 10px;
+    right: 10px;
+    background: #ff4444;
     color: white;
-    margin-top: 10px;
-}
-
-.btn-primary:hover {
-    background: #0052a3;
-}
-
-.btn-secondary {
-    background: #6c757d;
-    color: white;
-}
-
-.btn-secondary:hover {
-    background: #5a6268;
-}
-
-.btn-danger {
-    background: #dc3545;
-    color: white;
-}
-
-.btn-danger:hover {
-    background: #c82333;
-}
-
-.dados-campo {
-    margin-bottom: 15px;
-}
-
-.dados-campo label {
-    display: block;
-    margin-bottom: 5px;
-    font-weight: 500;
-}
-
-.pedido-item {
-    background: #f9f9f9;
-    border: 1px solid #ddd;
-    border-radius: 5px;
-    padding: 15px;
-    margin-bottom: 10px;
-}
-
-.pedido-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 10px;
-}
-
-.pedido-data {
+    padding: 5px 10px;
+    border-radius: 4px;
+    font-size: 0.8em;
     font-weight: bold;
-    color: #0066cc;
 }
 
-.pedido-valor {
-    font-size: 18px;
-    font-weight: bold;
-    color: #28a745;
+.avise-me-btn {
+    background: #ff9800 !important;
 }
 
-.pedido-itens {
-    font-size: 13px;
-    color: #666;
-    margin-top: 10px;
-    padding-top: 10px;
-    border-top: 1px solid #eee;
+.avise-me-btn:hover {
+    background: #e68900 !important;
 }
 
-/* ===== CORREÇÃO APENAS DO LADO DIREITO ===== */
-.checkout-page {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 20px;
-    width: 100%;
-    box-sizing: border-box;
-}
-
-.checkout-content {
-    width: 100%;
-    max-width: 1000px;
-    margin: 0 auto;
-}
-
-.checkout-section {
-    width: 100%;
-    padding: 30px;
-    background: #fff;
-    border-radius: 12px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-    box-sizing: border-box;
-}
-
-/* Ajuste dos campos para ficarem alinhados */
-.form-group {
-    width: 100%;
-    margin-bottom: 25px;
-}
-
-.form-group input,
-.form-group textarea {
-    width: 100%;
-    padding: 12px;
-    border: 2px solid #e0e0e0;
-    border-radius: 8px;
-    box-sizing: border-box;
-}
-
-/* Ajuste dos radios para ficarem lado a lado */
-.radio-group {
-    display: flex;
-    gap: 15px;
-    flex-wrap: wrap;
-}
-
-.radio-option {
-    flex: 1 1 150px;
-    border: 2px solid #e0e0e0;
-    border-radius: 8px;
-    padding: 12px;
-    text-align: center;
-    box-sizing: border-box;
-}
-
-/* Ajuste das opções de entrega e pagamento */
-.delivery-options,
-.payment-options {
-    display: flex;
-    gap: 20px;
-    flex-wrap: wrap;
-}
-
-.delivery-option,
-.payment-option {
-    flex: 1 1 200px;
-    border: 2px solid #e0e0e0;
-    border-radius: 8px;
-    padding: 15px;
-    box-sizing: border-box;
-}
-
-/* Ajuste dos botões */
-.navigation-buttons {
-    display: flex;
-    gap: 15px;
-    justify-content: center;
-}
-
-.back-button,
-.next-button,
-.confirm-button {
-    padding: 14px 30px;
-    border: none;
-    border-radius: 8px;
-    font-weight: bold;
-    cursor: pointer;
-    min-width: 150px;
-}
-
-/* Ajuste do resumo do pedido */
-.order-review {
-    background: #f8f9fa;
-    border-radius: 12px;
-    padding: 25px;
-    margin: 20px 0;
-}
-
-.review-section {
-    margin-bottom: 25px;
-    padding-bottom: 20px;
-    border-bottom: 2px solid #e0e0e0;
-}
-
-.review-section:last-child {
-    border-bottom: none;
-    margin-bottom: 0;
-    padding-bottom: 0;
-}
-
-/* ===== REMOVER BARRA DE ROLAGEM DOS MODAIS ===== */
-.swal2-popup {
-    overflow: hidden !important;
-}
-
-.swal2-html-container {
-    overflow: hidden !important;
-    max-height: none !important;
-}
-
-.swal2-container {
-    overflow: hidden !important;
-}
-
-/* Ajuste específico para o modal de dados */
-.swal2-popup .swal2-html-container {
-    overflow: visible !important;
-}
-
-.swal2-input {
-    margin: 10px 0 !important;
-}
-
-/* ===== CORREÇÃO DE Z-INDEX PARA MODAIS ===== */
-.swal2-container {
-    z-index: 9999999 !important;
-}
-
-.swal2-popup {
-    z-index: 9999999 !important;
-}
-
-#loginModal,
-#recuperarModal {
-    z-index: 9999999 !important;
-}
-
-.modal,
-.modal-content {
-    z-index: 9999999 !important;
-}
-
-/* ===== CORREÇÕES PARA MOBILE ===== */
-
-/* Ajuste geral para mobile */
+/* ===== CORREÇÕES PARA MOBILE (UNIFICADAS) ===== */
 @media (max-width: 768px) {
     /* Remover rolagem horizontal */
     html, body {
         overflow-x: hidden;
         width: 100%;
-        position: relative;
     }
     
-    /* Ajustar container principal */
-    .container, .inicio, .cart-page, .checkout-page {
-        width: 100%;
-        max-width: 100%;
+    /* Ajustar containers */
+    .cart-page, .checkout-page {
         padding: 10px;
-        box-sizing: border-box;
     }
     
-    /* ===== MENU DO USUÁRIO ===== */
-    .user-menu-mobile {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0,0,0,0.5);
-        z-index: 999999;
-        display: none;
-    }
-    
-    .user-menu-content {
-        position: fixed;
-        top: 0;
-        right: 0;
-        width: 80%;
-        max-width: 300px;
-        height: 100%;
-        background: white;
-        box-shadow: -2px 0 10px rgba(0,0,0,0.1);
-        z-index: 1000000;
-        overflow-y: auto;
-        animation: slideIn 0.3s ease-out;
-    }
-    
-    @keyframes slideIn {
-        from { transform: translateX(100%); }
-        to { transform: translateX(0); }
-    }
-    
-    /* Esconder dropdown antigo no mobile */
-    #userDropdown {
-        display: none !important;
-    }
-    
-    /* ===== CARRINHO ===== */
-    .cart-page {
-        padding: 10px;
-        overflow-x: hidden;
-    }
-    
+    /* Carrinho */
     .cart-content {
         flex-direction: column;
-        gap: 15px;
     }
     
     .cart-items-container {
         width: 100%;
-        max-width: 100%;
-    }
-    
-    .cart-item {
-        width: 100%;
-        padding: 12px;
-        margin-bottom: 10px;
-        flex-wrap: wrap;
     }
     
     .order-summary {
         width: 100%;
         position: static;
-        margin-top: 15px;
-        padding: 15px;
     }
     
-    /* ===== CHECKOUT ===== */
-    .checkout-page {
-        padding: 10px;
-        overflow-x: hidden;
-    }
-    
-    .checkout-section {
-        padding: 15px;
-        width: 100%;
-        box-sizing: border-box;
-    }
-    
-    .checkout-steps {
-        margin: 15px 0;
-    }
-    
-    .step {
-        padding: 5px 10px;
-        font-size: 12px;
-    }
-    
-    /* Ajustar botões de entrega e pagamento */
+    /* Checkout - BOTÕES CORRIGIDOS */
     .delivery-options,
     .payment-options {
         flex-direction: column;
@@ -1670,16 +981,17 @@ button, .categoria-button, .catalog-button, .btn-abrir-assistente {
     
     .delivery-option,
     .payment-option {
-        width: 100%;
-        margin: 0;
-        padding: 12px;
+        width: 100% !important;
+        margin: 0 !important;
+        padding: 12px !important;
     }
     
     .delivery-option label,
     .payment-option label {
-        flex-direction: row;
+        flex-direction: row !important;
         justify-content: center;
         gap: 10px;
+        font-size: 14px;
     }
     
     .delivery-option i,
@@ -1687,7 +999,7 @@ button, .categoria-button, .catalog-button, .btn-abrir-assistente {
         font-size: 20px;
     }
     
-    /* Ajustar botões de troco */
+    /* Botões de troco */
     .change-options {
         flex-direction: column;
         gap: 10px;
@@ -1697,7 +1009,7 @@ button, .categoria-button, .catalog-button, .btn-abrir-assistente {
         width: 100%;
     }
     
-    /* Ajustar botões de navegação */
+    /* Botões de navegação */
     .navigation-buttons {
         flex-direction: column;
         gap: 10px;
@@ -1707,79 +1019,105 @@ button, .categoria-button, .catalog-button, .btn-abrir-assistente {
     .next-button,
     .confirm-button {
         width: 100%;
-        padding: 12px;
-        font-size: 14px;
+        padding: 14px;
+        font-size: 16px;
     }
     
-    /* Remover rolagem horizontal dos inputs */
-    .form-group input,
-    .form-group textarea {
-        width: 100%;
-        box-sizing: border-box;
+    /* Checkout steps */
+    .checkout-steps .step {
+        font-size: 0.8em;
+        padding: 5px 10px;
     }
     
-    /* Ajustar radio groups */
-    .radio-group {
-        flex-direction: column;
-        gap: 10px;
-    }
-    
-    .radio-option {
-        width: 100%;
-    }
-    
-    /* ===== ASSISTENTE ===== */
+    /* Assistente - só aparece na página inicial */
     .assistente,
     .btn-abrir-assistente {
         display: none !important;
     }
     
-    /* Mostrar assistente apenas na página inicial */
     #inicio .assistente,
     #inicio .btn-abrir-assistente {
-        display: flex !important;
+        display: block !important;
     }
     
-    /* ===== MODAIS ===== */
+    /* Modais */
     .swal2-popup {
         width: 90% !important;
-        margin: 0 auto !important;
-    }
-    
-    .swal2-html-container {
-        max-height: 60vh !important;
-        overflow-y: auto !important;
     }
 }
 
-/* Ajustes específicos para telas muito pequenas */
+/* Ajustes para telas muito pequenas */
 @media (max-width: 480px) {
+    .grid {
+        grid-template-columns: 1fr;
+    }
+    
     .checkout-steps .step {
         font-size: 10px;
         padding: 4px 8px;
     }
     
-    .delivery-option label,
-    .payment-option label {
-        font-size: 13px;
-    }
-    
-    .form-group label {
-        font-size: 13px;
-    }
-    
-    .form-group input,
-    .form-group textarea {
-        padding: 10px;
-        font-size: 13px;
+    .header-slogan {
+        font-size: 2em;
     }
 }
 
-/* ===== ESTILOS PARA BOTÃO DE MARCAS ===== */
+/* ===== BOTÃO DE MARCAS ===== */
 .produto button[style*="background: #ff9800"] {
     background: #ff9800 !important;
 }
 
 .produto button[style*="background: #ff9800"]:hover {
     background: #e68900 !important;
+}
+
+/* ===== CORREÇÃO DO HORÁRIO DE AGENDAMENTO ===== */
+#scheduleError {
+    color: #ff4444;
+    font-size: 12px;
+    margin-top: 5px;
+    display: none;
+}
+
+/* ===== BOTÕES SIM, NÃO, NÃO TENHO GALÃO ===== */
+.radio-group {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin: 15px 0;
+}
+
+.btn-opcao {
+    flex: 1;
+    min-width: 120px;
+    padding: 12px 16px;
+    border: 2px solid #ddd;
+    background: white;
+    border-radius: 8px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s;
+    font-size: 14px;
+    text-align: center;
+    font-family: 'Montserrat', sans-serif;
+}
+
+.btn-opcao:hover {
+    border-color: #0066cc;
+    background: #f0f8ff;
+}
+
+.btn-opcao.selecionado {
+    border-color: #0066cc;
+    background: #0066cc;
+    color: white;
+}
+
+/* Responsivo */
+@media (max-width: 600px) {
+    .btn-opcao {
+        min-width: 100px;
+        padding: 10px 12px;
+        font-size: 12px;
+    }
 }
