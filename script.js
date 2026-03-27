@@ -1137,7 +1137,28 @@ function confirmOrder() {
     
     message += `*Forma de entrega:* ${deliveryMethod.value === 'delivery' ? 'Entrega em Casa' : 'Retirar no Local'}\n`;
     if (deliveryMethod.value === 'delivery') {
-        message += `*Endereço:* ${address}\n`;
+        // Formatar o endereço para enviar apenas Rua, Número e Complemento
+        // O endereço salvo segue o padrão: "Rua, Numero - Complemento, Bairro, Cidade - CEP: 00000-000 (Tipo)"
+        let enderecoFormatado = address;
+        
+        // 1. Remove o tipo entre parênteses no final (ex: (Residencial))
+        if (enderecoFormatado.includes(' (')) {
+            enderecoFormatado = enderecoFormatado.split(' (')[0];
+        }
+        
+        // 2. Remove o CEP se houver (ex: - CEP: 03103-001)
+        if (enderecoFormatado.includes(' - CEP:')) {
+            enderecoFormatado = enderecoFormatado.split(' - CEP:')[0];
+        }
+        
+        // 3. Pega apenas as duas primeiras partes (Rua e Numero/Complemento)
+        // O padrão de salvamento em auth-ui.js é `${rua}, ${numero} - ${complemento}, ${bairro}...`
+        const partes = enderecoFormatado.split(',');
+        if (partes.length >= 2) {
+            enderecoFormatado = partes[0].trim() + ', ' + partes[1].trim();
+        }
+
+        message += `*Endereço:* ${enderecoFormatado}\n`;
     }
     message += `*Forma de pagamento:* ${paymentDetails}\n\n`;
     
@@ -1185,8 +1206,12 @@ function confirmOrder() {
             dataPedido: new Date().toISOString()
         };
         
+        // Gerar número de pedido numérico baseado no timestamp (últimos 6 dígitos)
+        const pedidoNumero = Date.now().toString().slice(-6);
+        
         window.addDoc(window.collection(window.db, 'pedidos'), {
             ...pedidoData,
+            pedidoNumero: pedidoNumero,
             uid: window.currentUser.uid,
             email: window.currentUser.email
         })
@@ -1460,5 +1485,26 @@ document.addEventListener('DOMContentLoaded', function() {
         });
         
         observer.observe(checkoutPage, { attributes: true });
+    }
+
+    // Formatação de Telefone (11) 99215-6300
+    const phoneInput = document.getElementById('checkoutPhone');
+    if (phoneInput) {
+        phoneInput.addEventListener('input', (e) => {
+            let value = e.target.value.replace(/\D/g, '');
+            if (value.length > 11) value = value.slice(0, 11);
+            
+            if (value.length > 10) {
+                e.target.value = `(${value.slice(0, 2)}) ${value.slice(2, 7)}-${value.slice(7)}`;
+            } else if (value.length > 6) {
+                e.target.value = `(${value.slice(0, 2)}) ${value.slice(2, 6)}-${value.slice(6)}`;
+            } else if (value.length > 2) {
+                e.target.value = `(${value.slice(0, 2)}) ${value.slice(2)}`;
+            } else if (value.length > 0) {
+                e.target.value = `(${value}`;
+            } else {
+                e.target.value = value;
+            }
+        });
     }
 });

@@ -2,12 +2,10 @@
 
 let currentUser = null;
 let logoutTimer = null;
-let opcaoSelecionada = 'nao'; // padrão é NÃO
+let opcaoSelecionada = 'nao';
 
-// EXPORTA currentUser GLOBALMENTE
 window.currentUser = null;
 
-// Configurar timer de logout (30 minutos)
 function iniciarLogoutTimer() {
     if (logoutTimer) clearTimeout(logoutTimer);
     logoutTimer = setTimeout(() => {
@@ -23,7 +21,6 @@ function iniciarLogoutTimer() {
     }, 30 * 60 * 1000);
 }
 
-// Inicialização
 window.addEventListener('load', function() {
     setTimeout(criarMenuUsuario, 1000);
     restaurarInfoCapa();
@@ -36,7 +33,6 @@ window.addEventListener('load', function() {
         iniciarLogoutTimer();
     }
     
-    // Inicializar botões após carregar
     setTimeout(inicializarBotoesPrimeiraCompra, 500);
 });
 
@@ -46,7 +42,6 @@ function inicializarBotoesPrimeiraCompra() {
     const btnNaoTenho = document.getElementById('btnNaoTenho');
     
     if (btnSim && btnNao && btnNaoTenho) {
-        // Garantir que NÃO está selecionado por padrão
         btnNao.classList.add('selecionado');
         opcaoSelecionada = 'nao';
     }
@@ -62,26 +57,15 @@ function restaurarInfoCapa() {
     }
 }
 
-// ===== FUNÇÕES DOS BOTÕES SIM, NÃO, NÃO TENHO GALÃO ===== //
 function selecionarOpcao(opcao) {
     const btnSim = document.getElementById('btnSim');
     const btnNao = document.getElementById('btnNao');
     const btnNaoTenho = document.getElementById('btnNaoTenho');
     const galaoValidityGroup = document.getElementById('galaoValidityGroup');
     
-    // Remover classe selecionado de todos e adicionar data-opcao
-    if (btnSim) {
-        btnSim.classList.remove('selecionado');
-        btnSim.setAttribute('data-opcao', 'sim');
-    }
-    if (btnNao) {
-        btnNao.classList.remove('selecionado');
-        btnNao.setAttribute('data-opcao', 'nao');
-    }
-    if (btnNaoTenho) {
-        btnNaoTenho.classList.remove('selecionado');
-        btnNaoTenho.setAttribute('data-opcao', 'naoTenho');
-    }
+    if (btnSim) btnSim.classList.remove('selecionado');
+    if (btnNao) btnNao.classList.remove('selecionado');
+    if (btnNaoTenho) btnNaoTenho.classList.remove('selecionado');
     
     opcaoSelecionada = opcao;
     
@@ -105,7 +89,6 @@ function selecionarOpcao(opcao) {
             if (galaoValidity) galaoValidity.value = '';
         }
         
-        // Verificar se tem galão completo no carrinho
         setTimeout(() => {
             const temGalaoCompleto = verificarGalaoCompleto();
             if (!temGalaoCompleto) {
@@ -163,7 +146,6 @@ function irParaGalaoCompleto() {
     }
 }
 
-// ===== FUNÇÃO PARA ABRIR MENU MOBILE ===== //
 function abrirMenuMobile() {
     const menuAntigo = document.getElementById('userMenuMobile');
     if (menuAntigo) menuAntigo.remove();
@@ -356,35 +338,40 @@ async function mostrarOpcoesEndereco() {
         let enderecoOptions = '';
         enderecos.forEach((end, i) => {
             enderecoOptions += `
-                <div class="endereco-option" data-index="${i}" style="border: 2px solid ${i === enderecoSelecionado ? '#0066cc' : '#e0e0e0'}; border-radius: 10px; padding: 15px; margin-bottom: 10px; cursor: pointer;" onclick="selecionarEnderecoCheckout(${i})" id="endereco-checkout-${i}">
+                <div class="endereco-option" data-index="${i}" style="border: 2px solid ${i === enderecoSelecionado ? '#0066cc' : '#e0e0e0'}; border-radius: 10px; padding: 15px; margin-bottom: 10px; cursor: pointer; text-align: left;" onclick="window.escolherEnderecoRapidoCheckout('${i}')">
                     <div style="display: flex; align-items: center; gap: 10px;">
-                        <span style="background: ${i === enderecoSelecionado ? '#0066cc' : '#e0e0e0'}; color: ${i === enderecoSelecionado ? 'white' : '#666'}; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">${i+1}</span>
-                        <strong>${i === enderecoSelecionado ? 'Endereço Principal' : `Endereço ${i+1}`}</strong>
+                        <span style="background: ${i === enderecoSelecionado ? '#0066cc' : '#e0e0e0'}; color: ${i === enderecoSelecionado ? 'white' : '#666'}; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">${i+1}</span>
+                        <strong style="color: #0066cc;">${i === enderecoSelecionado ? 'Endereço Principal' : `Endereço ${i+1}`}</strong>
                     </div>
-                    <p style="margin: 10px 0 0 34px;">${end}</p>
+                    <p style="margin: 8px 0 0 34px; font-size: 14px; color: #333;">${end}</p>
                 </div>
             `;
         });
         
-        const { value: enderecoEscolhido } = await Swal.fire({
-            title: 'Escolha o endereço de entrega',
-            html: `<div style="max-height: 400px; overflow-y: auto; padding-right: 5px;">${enderecoOptions}</div>`,
-            showCancelButton: true,
-            confirmButtonText: 'Confirmar',
-            cancelButtonText: 'Cancelar',
-            confirmButtonColor: '#0066cc',
-            didOpen: () => {
-                document.querySelector('.swal2-container').style.zIndex = '9999999';
-            },
-            preConfirm: () => {
-                const index = window.enderecoSelecionadoCheckout !== undefined ? 
-                    window.enderecoSelecionadoCheckout : enderecoSelecionado;
-                window.enderecoSelecionadoCheckout = undefined;
-                return enderecos[index];
+        return new Promise(async (resolve) => {
+            window.escolherEnderecoRapidoCheckout = (index) => {
+                const endereco = enderecos[index];
+                Swal.close();
+                resolve(endereco);
+            };
+
+            const result = await Swal.fire({
+                title: 'Escolha o endereço de entrega',
+                html: `<div class="lista-enderecos-scroll" style="max-height: 400px;">${enderecoOptions}</div><p style="font-size: 12px; color: #666; margin-top: 10px;">Clique sobre o endereço para selecionar</p>`,
+                showConfirmButton: false,
+                showCancelButton: true,
+                cancelButtonText: 'Cancelar',
+                cancelButtonColor: '#6c757d',
+                didOpen: () => {
+                    const container = document.querySelector('.swal2-container');
+                    if (container) container.style.zIndex = '9999999';
+                }
+            });
+
+            if (result.isDismissed) {
+                resolve(null);
             }
         });
-        
-        return enderecoEscolhido || enderecos[enderecoSelecionado];
         
     } catch (error) {
         console.error('Erro ao mostrar opções de endereço:', error);
@@ -463,7 +450,6 @@ function mostrarModalLogin() {
                     <input type="tel" id="regTelefone" placeholder="(11) 99999-9999" style="width: 100%; padding: 10px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 14px; box-sizing: border-box;">
                 </div>
                 
-                <!-- Endereço - OBRIGATÓRIO -->
                 <div style="margin-bottom: 12px;">
                     <label style="display: block; margin-bottom: 5px; color: #333; font-weight: 500; font-size: 13px;">Endereço de Entrega*</label>
                     <input type="text" id="regEndereco" placeholder="Rua, número, bairro, CEP" style="width: 100%; padding: 10px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 14px; box-sizing: border-box;">
@@ -484,7 +470,26 @@ function mostrarModalLogin() {
     `;
     
     document.body.appendChild(modal);
+    
+    // Formatação de Telefone no Cadastro
+    const regPhone = document.getElementById('regTelefone');
+    if (regPhone) {
+        regPhone.addEventListener('input', (e) => {
+            let value = e.target.value.replace(/\D/g, '');
+            if (value.length > 11) value = value.slice(0, 11);
+            if (value.length > 10) {
+                e.target.value = `(${value.slice(0, 2)}) ${value.slice(2, 7)}-${value.slice(7)}`;
+            } else if (value.length > 6) {
+                e.target.value = `(${value.slice(0, 2)}) ${value.slice(2, 6)}-${value.slice(6)}`;
+            } else if (value.length > 2) {
+                e.target.value = `(${value.slice(0, 2)}) ${value.slice(2)}`;
+            } else if (value.length > 0) {
+                e.target.value = `(${value}`;
+            }
+        });
+    }
 }
+
 function mudarAba(aba) {
     const tabLogin = document.getElementById('tabLoginBtn');
     const tabRegistro = document.getElementById('tabRegistroBtn');
@@ -644,7 +649,6 @@ function registrarUsuario() {
     const senha = document.getElementById('regSenha')?.value;
     const senhaConfirm = document.getElementById('regSenhaConfirm')?.value;
     
-    // Validar todos os campos obrigatórios (incluindo endereço)
     if (!nome || !email || !telefone || !endereco || !senha) {
         Swal.fire({
             icon: 'warning',
@@ -690,7 +694,6 @@ function registrarUsuario() {
             currentUser = user;
             window.currentUser = user;
             
-            // Preparar dados do cliente com endereço obrigatório
             const clienteData = {
                 nome: nome,
                 email: email,
@@ -702,7 +705,6 @@ function registrarUsuario() {
             
             await window.setDoc(window.doc(window.db, 'clientes', user.uid), clienteData);
             
-            // Preencher campos do checkout
             const checkoutName = document.getElementById('checkoutName');
             const checkoutPhone = document.getElementById('checkoutPhone');
             const checkoutAddress = document.getElementById('checkoutAddress');
@@ -820,7 +822,6 @@ async function carregarDadosUsuario(uid) {
     }
 }
 
-// ===== FUNÇÃO HISTÓRICO ===== //
 async function mostrarHistorico() {
     if (!currentUser) {
         Swal.fire({
@@ -907,7 +908,7 @@ async function mostrarHistorico() {
                 <div style="background: white; border-radius: 10px; margin-bottom: 15px; border: 1px solid #e0e0e0; overflow: hidden;">
                     <div onclick="togglePedido('${index}')" style="padding: 15px; background: #f8f9fa; cursor: pointer; display: flex; justify-content: space-between; align-items: center;">
                         <div>
-                            <span style="background: #0066cc; color: white; padding: 3px 10px; border-radius: 15px; font-size: 12px; font-weight: bold;">#${pedido.id.slice(-8)}</span>
+                            <span style="background: #0066cc; color: white; padding: 3px 10px; border-radius: 15px; font-size: 12px; font-weight: bold;">#${pedido.pedidoNumero || pedido.id.slice(-6)}</span>
                             <span style="margin-left: 10px; color: #666;">${data} - ${hora}</span>
                         </div>
                         <div>
@@ -990,7 +991,6 @@ function togglePedido(index) {
     }
 }
 
-// ===== FUNÇÃO REPETIR PEDIDO ===== //
 window.repetirPedido = async function(pedidoId) {
     try {
         const docRef = window.doc(window.db, 'pedidos', pedidoId);
@@ -1017,14 +1017,17 @@ window.repetirPedido = async function(pedidoId) {
         
         if (p.itens && Array.isArray(p.itens)) {
             p.itens.forEach(item => {
+                // Tenta encontrar o produto original para pegar o preço ATUALIZADO
                 const produtoOriginal = window.produtos?.find(prod => prod.id === item.id);
                 
                 if (produtoOriginal && typeof cart !== 'undefined') {
+                    // Adiciona ao carrinho com o preço atual do sistema
                     cart.push({
                         ...produtoOriginal,
                         quantidade: item.quantidade || 1
                     });
                 } else {
+                    // Se não encontrar o produto original (ex: removido), mantém o do pedido mas avisa
                     cart.push({
                         id: item.id,
                         nome: item.nome || 'Produto',
@@ -1074,7 +1077,6 @@ window.repetirPedido = async function(pedidoId) {
     }
 };
 
-// ===== FUNÇÕES DE PERFIL COMPLETAS COM REMOÇÃO DE BARRA DE ROLAGEM ===== //
 async function mostrarDados() {
     if (!currentUser) {
         Swal.fire({
@@ -1129,10 +1131,6 @@ async function mostrarDados() {
             scrollbarPadding: false,
             backdrop: true,
             allowOutsideClick: true,
-            customClass: {
-                popup: 'swal2-popup-custom',
-                container: 'swal2-container-custom'
-            },
             didOpen: () => {
                 const container = document.querySelector('.swal2-container');
                 if (container) {
@@ -1153,6 +1151,24 @@ async function mostrarDados() {
                     htmlContainer.style.overflow = 'visible';
                     htmlContainer.style.maxHeight = 'none';
                     htmlContainer.style.padding = '0';
+                }
+                
+                // Formatação de Telefone no Editar Dados
+                const editPhone = document.getElementById('editTelefone');
+                if (editPhone) {
+                    editPhone.addEventListener('input', (e) => {
+                        let value = e.target.value.replace(/\D/g, '');
+                        if (value.length > 11) value = value.slice(0, 11);
+                        if (value.length > 10) {
+                            e.target.value = `(${value.slice(0, 2)}) ${value.slice(2, 7)}-${value.slice(7)}`;
+                        } else if (value.length > 6) {
+                            e.target.value = `(${value.slice(0, 2)}) ${value.slice(2, 6)}-${value.slice(6)}`;
+                        } else if (value.length > 2) {
+                            e.target.value = `(${value.slice(0, 2)}) ${value.slice(2)}`;
+                        } else if (value.length > 0) {
+                            e.target.value = `(${value}`;
+                        }
+                    });
                 }
             },
             preConfirm: () => {
@@ -1225,16 +1241,16 @@ async function mostrarEnderecos() {
         let enderecosHtml = '';
         enderecos.forEach((end, i) => {
             enderecosHtml += `
-                <div style="border: 2px solid ${i === enderecoSelecionado ? '#0066cc' : '#e0e0e0'}; border-radius: 10px; padding: 15px; margin-bottom: 10px; cursor: pointer;" onclick="selecionarEndereco(${i})" id="endereco-${i}">
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <div>
+                <div style="border: 2px solid ${i === enderecoSelecionado ? '#0066cc' : '#e0e0e0'}; border-radius: 10px; padding: 15px; margin-bottom: 10px; cursor: pointer; text-align: left;" onclick="selecionarEnderecoEFechar(${i})" id="endereco-${i}">
+                    <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                        <div style="flex: 1;">
                             <div style="display: flex; align-items: center; gap: 10px;">
-                                <span style="background: ${i === enderecoSelecionado ? '#0066cc' : '#e0e0e0'}; color: ${i === enderecoSelecionado ? 'white' : '#666'}; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">${i+1}</span>
-                                <strong>${i === enderecoSelecionado ? 'Endereço Principal' : `Endereço ${i+1}`}</strong>
+                                <span style="background: ${i === enderecoSelecionado ? '#0066cc' : '#e0e0e0'}; color: ${i === enderecoSelecionado ? 'white' : '#666'}; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">${i+1}</span>
+                                <strong style="color: #0066cc;">${i === enderecoSelecionado ? 'Endereço Principal' : `Endereço ${i+1}`}</strong>
                             </div>
-                            <p style="margin: 10px 0 0 34px; color: #333;">${end}</p>
+                            <p style="margin: 8px 0 0 34px; color: #333; font-size: 14px; line-height: 1.4;">${end}</p>
                         </div>
-                        <button onclick="removerEndereco(${i}); event.stopPropagation();" style="background: #dc3545; color: white; border: none; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center;" title="Remover">
+                        <button onclick="removerEndereco(${i}); event.stopPropagation();" style="background: #dc3545; color: white; border: none; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-left: 10px;" title="Remover">
                             <i class="fas fa-trash"></i>
                         </button>
                     </div>
@@ -1245,7 +1261,7 @@ async function mostrarEnderecos() {
         const { value: formValues } = await Swal.fire({
             title: 'Meus Endereços',
             html: `
-                <div style="max-height: 400px; overflow-y: auto; margin-bottom: 20px; padding-right: 5px;">
+                <div class="lista-enderecos-scroll">
                     ${enderecos.length === 0 ? 
                         '<p style="text-align: center; color: #666; padding: 30px;">Nenhum endereço cadastrado</p>' : 
                         enderecosHtml
@@ -1599,13 +1615,10 @@ function continuarCheckoutConvidado() {
     if (step2) step2.classList.remove('active');
     if (step3) step3.classList.remove('active');
     
-    // Configurar agendamento
     if (typeof window.setupScheduleInput === 'function') {
         setTimeout(window.setupScheduleInput, 100);
     }
 }
-
-const originalProceedToCheckout = window.proceedToCheckout;
 
 window.proceedToCheckout = async function() {
     if (typeof cart === 'undefined' || cart.length === 0) {
@@ -1626,21 +1639,28 @@ window.proceedToCheckout = async function() {
             title: 'Finalizar Compra',
             html: `
                 <div style="text-align: center;">
-                    <button onclick="mostrarModalLogin(); Swal.close();" style="width: 100%; padding: 12px; margin-bottom: 10px; background: #0066cc; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer;">Fazer Login</button>
-                    <button onclick="mostrarModalLogin(); setTimeout(() => mudarAba('registro'), 100); Swal.close();" style="width: 100%; padding: 12px; margin-bottom: 10px; background: #28a745; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer;">Criar Conta</button>
-                    <button onclick="continuarCheckoutConvidado()" style="width: 100%; padding: 12px; background: #6c757d; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer;">Continuar sem Login</button>
+                    <button onclick="mostrarModalLogin(); Swal.close();" style="width: 100%; padding: 10px; margin-bottom: 10px; background: #0066cc; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 14px;">Fazer Login</button>
+                    <button onclick="mostrarModalLogin(); setTimeout(() => mudarAba('registro'), 100); Swal.close();" style="width: 100%; padding: 10px; margin-bottom: 10px; background: #28a745; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 14px;">Criar Conta</button>
+                    <button onclick="continuarCheckoutConvidado()" style="width: 100%; padding: 10px; background: #6c757d; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 14px;">Continuar sem Login</button>
                 </div>
             `,
             showConfirmButton: false,
             showCloseButton: true,
+            width: '320px',
+            padding: '20px',
             didOpen: () => {
                 document.querySelector('.swal2-container').style.zIndex = '9999999';
+                const popup = document.querySelector('.swal2-popup');
+                if (popup) {
+                    popup.style.width = '320px';
+                    popup.style.maxWidth = '90%';
+                    popup.style.padding = '20px';
+                }
             }
         });
         return;
     }
     
-    // Validação com os novos botões
     if (opcaoSelecionada === 'sim') {
         const galaoValidity = document.getElementById('galaoValidity')?.value;
         if (!galaoValidity) {
@@ -1695,7 +1715,6 @@ function atualizarInterfaceUsuario(user) {
     }
 }
 
-// ===== CORREÇÃO CRÍTICA - onAuthStateChanged ===== //
 if (window.auth) {
     window.auth.onAuthStateChanged(async (user) => {
         currentUser = user;
@@ -1713,7 +1732,6 @@ if (window.auth) {
     console.error('❌ auth não encontrado!');
 }
 
-// Exportar funções
 window.mostrarModalLogin = mostrarModalLogin;
 window.mudarAba = mudarAba;
 window.mostrarRecuperarSenha = mostrarRecuperarSenha;
@@ -1728,6 +1746,10 @@ window.mostrarAlterarSenha = mostrarAlterarSenha;
 window.confirmarExclusaoConta = confirmarExclusaoConta;
 window.continuarCheckoutConvidado = continuarCheckoutConvidado;
 window.selecionarEndereco = selecionarEndereco;
+window.selecionarEnderecoEFechar = async function(index) {
+    await selecionarEndereco(index);
+    Swal.close();
+};
 window.removerEndereco = removerEndereco;
 window.irParaGalaoCompleto = irParaGalaoCompleto;
 window.togglePedido = togglePedido;
