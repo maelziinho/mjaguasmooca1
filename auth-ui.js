@@ -1,0 +1,1760 @@
+// ========== SISTEMA DE AUTENTICAÇÃO CORRIGIDO ========== //
+
+let currentUser = null;
+let logoutTimer = null;
+let opcaoSelecionada = 'nao';
+
+window.currentUser = null;
+
+function iniciarLogoutTimer() {
+    if (logoutTimer) clearTimeout(logoutTimer);
+    logoutTimer = setTimeout(() => {
+        if (currentUser) {
+            fazerLogout();
+            Swal.fire({
+                icon: 'info',
+                title: 'Sessão expirada',
+                text: 'Você foi desconectado por inatividade.',
+                confirmButtonColor: '#0066cc'
+            });
+        }
+    }, 30 * 60 * 1000);
+}
+
+window.addEventListener('load', function() {
+    setTimeout(criarMenuUsuario, 1000);
+    restaurarInfoCapa();
+    
+    if (window.auth?.currentUser) {
+        currentUser = window.auth.currentUser;
+        window.currentUser = currentUser;
+        carregarDadosUsuario(currentUser.uid);
+        atualizarInterfaceUsuario(currentUser);
+        iniciarLogoutTimer();
+    }
+    
+    setTimeout(inicializarBotoesPrimeiraCompra, 500);
+});
+
+function inicializarBotoesPrimeiraCompra() {
+    const btnSim = document.getElementById('btnSim');
+    const btnNao = document.getElementById('btnNao');
+    const btnNaoTenho = document.getElementById('btnNaoTenho');
+    
+    if (btnSim && btnNao && btnNaoTenho) {
+        btnNao.classList.add('selecionado');
+        opcaoSelecionada = 'nao';
+    }
+}
+
+function restaurarInfoCapa() {
+    const infoCapa = document.getElementById('informacoes');
+    if (infoCapa) {
+        infoCapa.innerHTML = `
+            <p><i class="fas fa-clock"></i> Horário de Funcionamento: 09:00 - 18:00</p>
+            <p><i class="fas fa-motorcycle"></i> Entrega Rápida, atendimento de qualidade!</p>
+        `;
+    }
+}
+
+function selecionarOpcao(opcao) {
+    const btnSim = document.getElementById('btnSim');
+    const btnNao = document.getElementById('btnNao');
+    const btnNaoTenho = document.getElementById('btnNaoTenho');
+    const galaoValidityGroup = document.getElementById('galaoValidityGroup');
+    
+    if (btnSim) btnSim.classList.remove('selecionado');
+    if (btnNao) btnNao.classList.remove('selecionado');
+    if (btnNaoTenho) btnNaoTenho.classList.remove('selecionado');
+    
+    opcaoSelecionada = opcao;
+    
+    if (opcao === 'sim') {
+        if (btnSim) btnSim.classList.add('selecionado');
+        if (galaoValidityGroup) galaoValidityGroup.style.display = 'block';
+    } 
+    else if (opcao === 'nao') {
+        if (btnNao) btnNao.classList.add('selecionado');
+        if (galaoValidityGroup) {
+            galaoValidityGroup.style.display = 'none';
+            const galaoValidity = document.getElementById('galaoValidity');
+            if (galaoValidity) galaoValidity.value = '';
+        }
+    }
+    else if (opcao === 'naoTenho') {
+        if (btnNaoTenho) btnNaoTenho.classList.add('selecionado');
+        if (galaoValidityGroup) {
+            galaoValidityGroup.style.display = 'none';
+            const galaoValidity = document.getElementById('galaoValidity');
+            if (galaoValidity) galaoValidity.value = '';
+        }
+        
+        setTimeout(() => {
+            const temGalaoCompleto = verificarGalaoCompleto();
+            if (!temGalaoCompleto) {
+                recomendarGalaoCompleto();
+            }
+        }, 500);
+    }
+}
+
+function verificarGalaoCompleto() {
+    if (typeof cart === 'undefined' || !cart || cart.length === 0) return false;
+    return cart.some(item => 
+        item.categoria === 'Galão Completo' || 
+        (item.nome && item.nome.toLowerCase().includes('galão completo'))
+    );
+}
+
+function recomendarGalaoCompleto() {
+    Swal.fire({
+        icon: 'info',
+        title: 'Galão Completo Necessário',
+        html: `
+            <div style="text-align: center;">
+                <p style="margin-bottom: 15px;">Você informou que não tem galão. Para continuar, você precisa adicionar um <strong>Galão Completo</strong> ao carrinho.</p>
+                <p style="margin-bottom: 20px; color: #0066cc;">O valor do Galão Completo é diferente do refil!</p>
+                <button onclick="irParaGalaoCompleto()" style="padding: 12px 20px; background: #28a745; color: white; border: none; border-radius: 5px; font-weight: bold; cursor: pointer;">
+                    <i class="fas fa-bottle-water"></i> Ver Galões Completos
+                </button>
+            </div>
+        `,
+        showConfirmButton: false,
+        showCloseButton: true,
+        didOpen: () => {
+            document.querySelector('.swal2-container').style.zIndex = '9999999';
+        }
+    });
+}
+
+function irParaGalaoCompleto() {
+    Swal.close();
+    document.getElementById('checkoutPage').style.display = 'none';
+    document.getElementById('inicio').style.display = 'block';
+    
+    if (typeof window.filterProducts === 'function') {
+        window.filterProducts('Galão Completo');
+        setTimeout(() => {
+            Swal.fire({
+                icon: 'success',
+                title: 'Galões Completos',
+                text: 'Selecione o galão completo desejado',
+                timer: 2000,
+                showConfirmButton: false
+            });
+        }, 500);
+    }
+}
+
+function abrirMenuMobile() {
+    const menuAntigo = document.getElementById('userMenuMobile');
+    if (menuAntigo) menuAntigo.remove();
+    
+    const overlay = document.createElement('div');
+    overlay.className = 'user-menu-mobile';
+    overlay.id = 'userMenuMobile';
+    overlay.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.5);
+        z-index: 999999;
+        display: flex;
+        justify-content: flex-end;
+    `;
+    
+    const content = document.createElement('div');
+    content.className = 'user-menu-content';
+    content.style.cssText = `
+        position: fixed;
+        top: 0;
+        right: 0;
+        width: 80%;
+        max-width: 300px;
+        height: 100%;
+        background: white;
+        box-shadow: -2px 0 10px rgba(0,0,0,0.1);
+        z-index: 1000000;
+        overflow-y: auto;
+        animation: slideIn 0.3s ease-out;
+    `;
+    
+    const userEmail = currentUser ? currentUser.email : 'Usuário';
+    const userName = userEmail.split('@')[0];
+    
+    content.innerHTML = `
+        <div style="padding: 20px; background: #0066cc; color: white;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <h3 style="margin: 0;">Olá, ${userName}!</h3>
+                <button onclick="fecharMenuMobile()" style="background: none; border: none; color: white; font-size: 24px; cursor: pointer;">×</button>
+            </div>
+            <p style="margin: 0; font-size: 12px; opacity: 0.8;">${userEmail}</p>
+        </div>
+        
+        <div style="padding: 15px;">
+            <a href="#" onclick="mostrarHistorico(); fecharMenuMobile(); return false;" style="display: flex; align-items: center; gap: 15px; padding: 15px; color: #333; text-decoration: none; border-bottom: 1px solid #eee;">
+                <i class="fas fa-history" style="width: 24px; color: #0066cc;"></i>
+                <span>Histórico de Pedidos</span>
+            </a>
+            
+            <a href="#" onclick="mostrarDados(); fecharMenuMobile(); return false;" style="display: flex; align-items: center; gap: 15px; padding: 15px; color: #333; text-decoration: none; border-bottom: 1px solid #eee;">
+                <i class="fas fa-edit" style="width: 24px; color: #0066cc;"></i>
+                <span>Meus Dados</span>
+            </a>
+            
+            <a href="#" onclick="mostrarEnderecos(); fecharMenuMobile(); return false;" style="display: flex; align-items: center; gap: 15px; padding: 15px; color: #333; text-decoration: none; border-bottom: 1px solid #eee;">
+                <i class="fas fa-map-marker-alt" style="width: 24px; color: #0066cc;"></i>
+                <span>Endereços</span>
+            </a>
+            
+            <a href="#" onclick="mostrarAlterarSenha(); fecharMenuMobile(); return false;" style="display: flex; align-items: center; gap: 15px; padding: 15px; color: #333; text-decoration: none; border-bottom: 1px solid #eee;">
+                <i class="fas fa-key" style="width: 24px; color: #0066cc;"></i>
+                <span>Alterar Senha</span>
+            </a>
+            
+            <a href="#" onclick="confirmarExclusaoConta(); fecharMenuMobile(); return false;" style="display: flex; align-items: center; gap: 15px; padding: 15px; color: #dc3545; text-decoration: none; border-bottom: 1px solid #eee;">
+                <i class="fas fa-trash-alt" style="width: 24px;"></i>
+                <span>Excluir Conta</span>
+            </a>
+            
+            <a href="#" onclick="fazerLogout(); fecharMenuMobile(); return false;" style="display: flex; align-items: center; gap: 15px; padding: 15px; color: #333; text-decoration: none;">
+                <i class="fas fa-sign-out-alt" style="width: 24px; color: #dc3545;"></i>
+                <span>Sair</span>
+            </a>
+        </div>
+    `;
+    
+    overlay.appendChild(content);
+    document.body.appendChild(overlay);
+    
+    overlay.addEventListener('click', function(e) {
+        if (e.target === overlay) {
+            fecharMenuMobile();
+        }
+    });
+}
+
+function fecharMenuMobile() {
+    const menu = document.getElementById('userMenuMobile');
+    if (menu) menu.remove();
+}
+
+function criarMenuUsuario() {
+    if (document.getElementById('userMenuContainer')) return;
+    
+    const categorias = document.querySelector('.categorias');
+    if (!categorias) return;
+    
+    const userContainer = document.createElement('div');
+    userContainer.id = 'userMenuContainer';
+    userContainer.style.cssText = 'position: relative; margin-right: 5px; display: inline-block;';
+    
+    const userBtn = document.createElement('button');
+    userBtn.id = 'userBtn';
+    userBtn.className = 'categoria-button';
+    userBtn.style.cssText = 'background: #0066cc; display: none; width: 40px; height: 40px; border-radius: 50%;';
+    userBtn.innerHTML = '<i class="fas fa-user-check"></i>';
+    
+    const userDropdown = document.createElement('div');
+    userDropdown.id = 'userDropdown';
+    userDropdown.style.cssText = `
+        position: absolute; top: 45px; right: 0; background: white; border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15); width: 220px; z-index: 10000; display: none;
+    `;
+    userDropdown.innerHTML = `
+        <div style="padding: 12px; border-bottom: 1px solid #eee; background: #f5f5f5;">
+            <strong id="dropdownUserEmail">Carregando...</strong>
+        </div>
+        <a href="#" onclick="mostrarHistorico(); return false;" style="display: block; padding: 10px 15px; color: #333; border-bottom: 1px solid #eee; text-decoration: none;">
+            <i class="fas fa-history" style="width: 20px; color: #0066cc;"></i> Histórico
+        </a>
+        <a href="#" onclick="mostrarDados(); return false;" style="display: block; padding: 10px 15px; color: #333; border-bottom: 1px solid #eee; text-decoration: none;">
+            <i class="fas fa-edit" style="width: 20px; color: #0066cc;"></i> Meus Dados
+        </a>
+        <a href="#" onclick="mostrarEnderecos(); return false;" style="display: block; padding: 10px 15px; color: #333; border-bottom: 1px solid #eee; text-decoration: none;">
+            <i class="fas fa-map-marker-alt" style="width: 20px; color: #0066cc;"></i> Endereços
+        </a>
+        <a href="#" onclick="mostrarAlterarSenha(); return false;" style="display: block; padding: 10px 15px; color: #333; border-bottom: 1px solid #eee; text-decoration: none;">
+            <i class="fas fa-key" style="width: 20px; color: #0066cc;"></i> Alterar Senha
+        </a>
+        <a href="#" onclick="confirmarExclusaoConta(); return false;" style="display: block; padding: 10px 15px; color: #dc3545; border-bottom: 1px solid #eee; text-decoration: none;">
+            <i class="fas fa-trash-alt" style="width: 20px;"></i> Excluir Conta
+        </a>
+        <a href="#" onclick="fazerLogout(); return false;" style="display: block; padding: 10px 15px; color: #333; text-decoration: none;">
+            <i class="fas fa-sign-out-alt" style="width: 20px; color: #dc3545;"></i> Sair
+        </a>
+    `;
+    
+    const loginBtn = document.createElement('button');
+    loginBtn.id = 'loginBtn';
+    loginBtn.className = 'categoria-button';
+    loginBtn.style.cssText = 'background: #28a745; width: 40px; height: 40px; border-radius: 50%; margin-right: 5px;';
+    loginBtn.innerHTML = '<i class="fas fa-user"></i>';
+    loginBtn.onclick = mostrarModalLogin;
+    
+    userContainer.appendChild(userBtn);
+    userContainer.appendChild(userDropdown);
+    
+    const homeBtn = document.querySelector('.categoria-button[title="Início"]');
+    if (homeBtn) {
+        categorias.insertBefore(loginBtn, homeBtn);
+        categorias.insertBefore(userContainer, homeBtn);
+    }
+    
+    document.addEventListener('click', (e) => {
+        if (!userContainer.contains(e.target)) {
+            userDropdown.style.display = 'none';
+        }
+    });
+    
+    userBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        if (window.innerWidth <= 768) {
+            abrirMenuMobile();
+        } else {
+            userDropdown.style.display = userDropdown.style.display === 'block' ? 'none' : 'block';
+        }
+    });
+}
+
+async function mostrarOpcoesEndereco() {
+    if (!currentUser) return null;
+    
+    try {
+        const docRef = window.doc(window.db, 'clientes', currentUser.uid);
+        const docSnap = await window.getDoc(docRef);
+        
+        if (!docSnap.exists()) return null;
+        
+        const dados = docSnap.data();
+        const enderecos = dados.enderecos || [];
+        const enderecoSelecionado = dados.enderecoSelecionado || 0;
+        
+        if (enderecos.length === 0) return null;
+        if (enderecos.length === 1) return enderecos[0];
+        
+        let enderecoOptions = '';
+        enderecos.forEach((end, i) => {
+            enderecoOptions += `
+                <div class="endereco-option" data-index="${i}" style="border: 2px solid ${i === enderecoSelecionado ? '#0066cc' : '#e0e0e0'}; border-radius: 10px; padding: 15px; margin-bottom: 10px; cursor: pointer; text-align: left;" onclick="window.escolherEnderecoRapidoCheckout('${i}')">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <span style="background: ${i === enderecoSelecionado ? '#0066cc' : '#e0e0e0'}; color: ${i === enderecoSelecionado ? 'white' : '#666'}; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">${i+1}</span>
+                        <strong style="color: #0066cc;">${i === enderecoSelecionado ? 'Endereço Principal' : `Endereço ${i+1}`}</strong>
+                    </div>
+                    <p style="margin: 8px 0 0 34px; font-size: 14px; color: #333;">${end}</p>
+                </div>
+            `;
+        });
+        
+        return new Promise(async (resolve) => {
+            window.escolherEnderecoRapidoCheckout = (index) => {
+                const endereco = enderecos[index];
+                Swal.close();
+                resolve(endereco);
+            };
+
+            const result = await Swal.fire({
+                title: 'Escolha o endereço de entrega',
+                html: `<div class="lista-enderecos-scroll" style="max-height: 400px;">${enderecoOptions}</div><p style="font-size: 12px; color: #666; margin-top: 10px;">Clique sobre o endereço para selecionar</p>`,
+                showConfirmButton: false,
+                showCancelButton: true,
+                cancelButtonText: 'Cancelar',
+                cancelButtonColor: '#6c757d',
+                didOpen: () => {
+                    const container = document.querySelector('.swal2-container');
+                    if (container) container.style.zIndex = '9999999';
+                }
+            });
+
+            if (result.isDismissed) {
+                resolve(null);
+            }
+        });
+        
+    } catch (error) {
+        console.error('Erro ao mostrar opções de endereço:', error);
+        return null;
+    }
+}
+
+window.enderecoSelecionadoCheckout = undefined;
+window.selecionarEnderecoCheckout = function(index) {
+    window.enderecoSelecionadoCheckout = index;
+    
+    document.querySelectorAll('.endereco-option').forEach(el => {
+        el.style.borderColor = '#e0e0e0';
+    });
+    
+    const el = document.getElementById(`endereco-checkout-${index}`);
+    if (el) {
+        el.style.borderColor = '#0066cc';
+    }
+};
+
+function mostrarModalLogin() {
+    const modalExistente = document.getElementById('loginModal');
+    if (modalExistente) modalExistente.remove();
+    
+    const modal = document.createElement('div');
+    modal.id = 'loginModal';
+    modal.style.cssText = `
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0,0,0,0.5); display: flex; justify-content: center;
+        align-items: center; z-index: 9999999;
+        backdrop-filter: blur(5px);
+    `;
+    
+    modal.innerHTML = `
+        <div style="background: white; border-radius: 20px; padding: 25px; max-width: 480px; width: 90%; position: relative; box-shadow: 0 20px 60px rgba(0,0,0,0.3); max-height: 90vh; overflow-y: auto;">
+            <button onclick="this.closest('#loginModal').remove()" style="position: absolute; top: 15px; right: 15px; background: none; border: none; font-size: 24px; cursor: pointer; color: #666;">×</button>
+            
+            <div style="text-align: center; margin-bottom: 20px;">
+                <img src="images/logomj.png" alt="MJ Águas" style="max-width: 100px; margin-bottom: 10px;">
+                <h2 style="color: #0066cc; margin: 0; font-size: 22px;">Bem-vindo(a)!</h2>
+                <p style="color: #666; margin-top: 5px; font-size: 13px;">Faça login ou crie sua conta</p>
+            </div>
+            
+            <div style="display: flex; gap: 10px; margin-bottom: 20px; background: #f0f0f0; border-radius: 10px; padding: 5px;">
+                <button id="tabLoginBtn" onclick="mudarAba('login')" style="flex: 1; padding: 10px; background: #0066cc; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 14px;">Login</button>
+                <button id="tabRegistroBtn" onclick="mudarAba('registro')" style="flex: 1; padding: 10px; background: transparent; color: #666; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 14px;">Cadastro</button>
+            </div>
+            
+            <div id="aba-login">
+                <div style="margin-bottom: 15px;">
+                    <label style="display: block; margin-bottom: 5px; color: #333; font-weight: 500; font-size: 13px;">E-mail</label>
+                    <input type="email" id="loginEmail" placeholder="seu@email.com" style="width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 14px; box-sizing: border-box;">
+                </div>
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; margin-bottom: 5px; color: #333; font-weight: 500; font-size: 13px;">Senha</label>
+                    <input type="password" id="loginSenha" placeholder="••••••••" style="width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 14px; box-sizing: border-box;">
+                </div>
+                <button onclick="fazerLogin()" style="width: 100%; padding: 12px; background: #0066cc; color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 15px; cursor: pointer;">Entrar</button>
+                <div style="text-align: center; margin-top: 12px;">
+                    <a href="#" onclick="mostrarRecuperarSenha(); return false;" style="color: #0066cc; text-decoration: none; font-size: 12px;">Esqueci minha senha</a>
+                </div>
+            </div>
+            
+            <div id="aba-registro" style="display: none;">
+                <div style="margin-bottom: 12px;">
+                    <label style="display: block; margin-bottom: 5px; color: #333; font-weight: 500; font-size: 13px;">Nome Completo*</label>
+                    <input type="text" id="regNome" placeholder="Seu nome" style="width: 100%; padding: 10px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 14px; box-sizing: border-box;">
+                </div>
+                <div style="margin-bottom: 12px;">
+                    <label style="display: block; margin-bottom: 5px; color: #333; font-weight: 500; font-size: 13px;">E-mail*</label>
+                    <input type="email" id="regEmail" placeholder="seu@email.com" style="width: 100%; padding: 10px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 14px; box-sizing: border-box;">
+                </div>
+                <div style="margin-bottom: 12px;">
+                    <label style="display: block; margin-bottom: 5px; color: #333; font-weight: 500; font-size: 13px;">Telefone*</label>
+                    <input type="tel" id="regTelefone" placeholder="(11) 99999-9999" style="width: 100%; padding: 10px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 14px; box-sizing: border-box;">
+                </div>
+                
+                <div style="margin-bottom: 12px;">
+                    <label style="display: block; margin-bottom: 5px; color: #333; font-weight: 500; font-size: 13px;">Endereço de Entrega*</label>
+                    <input type="text" id="regEndereco" placeholder="Rua, número, bairro, CEP" style="width: 100%; padding: 10px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 14px; box-sizing: border-box;">
+                    <small style="color: #666; font-size: 11px;">Informe seu endereço completo para entrega</small>
+                </div>
+                
+                <div style="margin-bottom: 12px;">
+                    <label style="display: block; margin-bottom: 5px; color: #333; font-weight: 500; font-size: 13px;">Senha*</label>
+                    <input type="password" id="regSenha" placeholder="Mínimo 6 caracteres" style="width: 100%; padding: 10px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 14px; box-sizing: border-box;">
+                </div>
+                <div style="margin-bottom: 15px;">
+                    <label style="display: block; margin-bottom: 5px; color: #333; font-weight: 500; font-size: 13px;">Confirmar Senha*</label>
+                    <input type="password" id="regSenhaConfirm" placeholder="Digite novamente" style="width: 100%; padding: 10px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 14px; box-sizing: border-box;">
+                </div>
+                <button onclick="registrarUsuario()" style="width: 100%; padding: 12px; background: #28a745; color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 15px; cursor: pointer; margin-bottom: 5px;">Criar Conta</button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    // Formatação de Telefone no Cadastro
+    const regPhone = document.getElementById('regTelefone');
+    if (regPhone) {
+        regPhone.addEventListener('input', (e) => {
+            let value = e.target.value.replace(/\D/g, '');
+            if (value.length > 11) value = value.slice(0, 11);
+            if (value.length > 10) {
+                e.target.value = `(${value.slice(0, 2)}) ${value.slice(2, 7)}-${value.slice(7)}`;
+            } else if (value.length > 6) {
+                e.target.value = `(${value.slice(0, 2)}) ${value.slice(2, 6)}-${value.slice(6)}`;
+            } else if (value.length > 2) {
+                e.target.value = `(${value.slice(0, 2)}) ${value.slice(2)}`;
+            } else if (value.length > 0) {
+                e.target.value = `(${value}`;
+            }
+        });
+    }
+}
+
+function mudarAba(aba) {
+    const tabLogin = document.getElementById('tabLoginBtn');
+    const tabRegistro = document.getElementById('tabRegistroBtn');
+    const abaLogin = document.getElementById('aba-login');
+    const abaRegistro = document.getElementById('aba-registro');
+    
+    if (aba === 'login') {
+        tabLogin.style.background = '#0066cc';
+        tabLogin.style.color = 'white';
+        tabRegistro.style.background = 'transparent';
+        tabRegistro.style.color = '#666';
+        abaLogin.style.display = 'block';
+        abaRegistro.style.display = 'none';
+    } else {
+        tabRegistro.style.background = '#28a745';
+        tabRegistro.style.color = 'white';
+        tabLogin.style.background = 'transparent';
+        tabLogin.style.color = '#666';
+        abaLogin.style.display = 'none';
+        abaRegistro.style.display = 'block';
+    }
+}
+
+function mostrarRecuperarSenha() {
+    document.getElementById('loginModal')?.remove();
+    
+    const modal = document.createElement('div');
+    modal.id = 'recuperarModal';
+    modal.style.cssText = `
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0,0,0,0.5); display: flex; justify-content: center;
+        align-items: center; z-index: 10000000;
+        backdrop-filter: blur(5px);
+    `;
+    
+    modal.innerHTML = `
+        <div style="background: white; border-radius: 20px; padding: 30px; max-width: 400px; width: 90%; position: relative; box-shadow: 0 20px 60px rgba(0,0,0,0.3);">
+            <button onclick="this.closest('#recuperarModal').remove()" style="position: absolute; top: 15px; right: 15px; background: none; border: none; font-size: 24px; cursor: pointer; color: #666;">×</button>
+            <h2 style="color: #0066cc; margin-bottom: 20px;">Recuperar Senha</h2>
+            <p style="color: #666; margin-bottom: 20px;">Digite seu e-mail para receber o link de recuperação.</p>
+            <input type="email" id="recuperarEmail" placeholder="seu@email.com" style="width: 100%; padding: 12px; margin-bottom: 20px; border: 2px solid #e0e0e0; border-radius: 8px; box-sizing: border-box;">
+            <button onclick="enviarRecuperacao()" style="width: 100%; padding: 14px; background: #0066cc; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer;">Enviar</button>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+}
+
+function enviarRecuperacao() {
+    const email = document.getElementById('recuperarEmail')?.value;
+    if (!email) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Atenção',
+            text: 'Digite seu e-mail',
+            confirmButtonColor: '#0066cc',
+            didOpen: () => {
+                document.querySelector('.swal2-container').style.zIndex = '9999999';
+            }
+        });
+        return;
+    }
+    
+    window.sendPasswordResetEmail(window.auth, email)
+        .then(() => {
+            Swal.fire({
+                icon: 'success',
+                title: 'E-mail enviado!',
+                text: 'Verifique sua caixa de entrada',
+                confirmButtonColor: '#0066cc',
+                didOpen: () => {
+                    document.querySelector('.swal2-container').style.zIndex = '9999999';
+                }
+            });
+            document.getElementById('recuperarModal')?.remove();
+        })
+        .catch(() => {
+            Swal.fire({
+                icon: 'error',
+                title: 'Erro',
+                text: 'E-mail não encontrado',
+                confirmButtonColor: '#0066cc',
+                didOpen: () => {
+                    document.querySelector('.swal2-container').style.zIndex = '9999999';
+                }
+            });
+        });
+}
+
+function fazerLogin() {
+    const email = document.getElementById('loginEmail')?.value;
+    const senha = document.getElementById('loginSenha')?.value;
+    
+    if (!email || !senha) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Atenção',
+            text: 'Preencha todos os campos',
+            confirmButtonColor: '#0066cc',
+            didOpen: () => {
+                document.querySelector('.swal2-container').style.zIndex = '9999999';
+            }
+        });
+        return;
+    }
+    
+    window.signInWithEmailAndPassword(window.auth, email, senha)
+        .then(async (userCredential) => {
+            currentUser = userCredential.user;
+            window.currentUser = currentUser;
+            
+            await Swal.fire({
+                icon: 'success',
+                title: 'Login realizado!',
+                text: 'Bem-vindo(a) de volta!',
+                timer: 1500,
+                showConfirmButton: false,
+                didOpen: () => {
+                    document.querySelector('.swal2-container').style.zIndex = '9999999';
+                }
+            });
+            
+            document.getElementById('loginModal')?.remove();
+            atualizarInterfaceUsuario(currentUser);
+            iniciarLogoutTimer();
+            
+            await carregarDadosUsuario(currentUser.uid);
+            
+            if (document.getElementById('checkoutPage').style.display === 'block') {
+                continuarCheckoutConvidado();
+            }
+        })
+        .catch((error) => {
+            let msg = 'Erro no login';
+            if (error.code === 'auth/user-not-found') {
+                msg = 'Nenhuma conta encontrada com este e-mail';
+            } else if (error.code === 'auth/wrong-password') {
+                msg = 'Senha incorreta';
+            }
+            Swal.fire({
+                icon: 'error',
+                title: 'Erro',
+                text: msg,
+                confirmButtonColor: '#0066cc',
+                didOpen: () => {
+                    document.querySelector('.swal2-container').style.zIndex = '9999999';
+                }
+            });
+        });
+}
+
+function registrarUsuario() {
+    const nome = document.getElementById('regNome')?.value;
+    const email = document.getElementById('regEmail')?.value;
+    const telefone = document.getElementById('regTelefone')?.value;
+    const endereco = document.getElementById('regEndereco')?.value;
+    const senha = document.getElementById('regSenha')?.value;
+    const senhaConfirm = document.getElementById('regSenhaConfirm')?.value;
+    
+    if (!nome || !email || !telefone || !endereco || !senha) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Atenção',
+            text: 'Preencha todos os campos obrigatórios (*)',
+            confirmButtonColor: '#0066cc',
+            didOpen: () => {
+                document.querySelector('.swal2-container').style.zIndex = '9999999';
+            }
+        });
+        return;
+    }
+    
+    if (senha !== senhaConfirm) {
+        Swal.fire({
+            icon: 'error',
+            title: 'Erro',
+            text: 'As senhas não coincidem',
+            confirmButtonColor: '#0066cc',
+            didOpen: () => {
+                document.querySelector('.swal2-container').style.zIndex = '9999999';
+            }
+        });
+        return;
+    }
+    
+    if (senha.length < 6) {
+        Swal.fire({
+            icon: 'error',
+            title: 'Erro',
+            text: 'A senha deve ter pelo menos 6 caracteres',
+            confirmButtonColor: '#0066cc',
+            didOpen: () => {
+                document.querySelector('.swal2-container').style.zIndex = '9999999';
+            }
+        });
+        return;
+    }
+    
+    window.createUserWithEmailAndPassword(window.auth, email, senha)
+        .then(async (userCredential) => {
+            const user = userCredential.user;
+            currentUser = user;
+            window.currentUser = user;
+            
+            const clienteData = {
+                nome: nome,
+                email: email,
+                telefone: telefone,
+                enderecos: [endereco.trim()],
+                enderecoSelecionado: 0,
+                dataCriacao: new Date().toISOString()
+            };
+            
+            await window.setDoc(window.doc(window.db, 'clientes', user.uid), clienteData);
+            
+            const checkoutName = document.getElementById('checkoutName');
+            const checkoutPhone = document.getElementById('checkoutPhone');
+            const checkoutAddress = document.getElementById('checkoutAddress');
+            
+            if (checkoutName) checkoutName.value = nome;
+            if (checkoutPhone) checkoutPhone.value = telefone;
+            if (checkoutAddress) checkoutAddress.value = endereco;
+            
+            await Swal.fire({
+                icon: 'success',
+                title: 'Conta criada!',
+                text: 'Bem-vindo(a) à MJ Águas! Seu endereço foi salvo.',
+                timer: 2000,
+                showConfirmButton: false,
+                didOpen: () => {
+                    document.querySelector('.swal2-container').style.zIndex = '9999999';
+                }
+            });
+            
+            document.getElementById('loginModal')?.remove();
+            
+            atualizarInterfaceUsuario(user);
+            iniciarLogoutTimer();
+            
+            if (document.getElementById('checkoutPage').style.display === 'block') {
+                continuarCheckoutConvidado();
+            }
+        })
+        .catch((error) => {
+            if (error.code === 'auth/email-already-in-use') {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'E-mail já cadastrado',
+                    text: 'Este e-mail já possui uma conta. Faça login.',
+                    confirmButtonColor: '#0066cc',
+                    didOpen: () => {
+                        document.querySelector('.swal2-container').style.zIndex = '9999999';
+                    }
+                });
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Erro',
+                    text: 'Erro ao criar conta: ' + error.message,
+                    confirmButtonColor: '#0066cc',
+                    didOpen: () => {
+                        document.querySelector('.swal2-container').style.zIndex = '9999999';
+                    }
+                });
+            }
+        });
+}
+
+function fazerLogout() {
+    window.signOut(window.auth)
+        .then(() => {
+            currentUser = null;
+            window.currentUser = null;
+            if (logoutTimer) clearTimeout(logoutTimer);
+            
+            Swal.fire({
+                icon: 'success',
+                title: 'Logout realizado',
+                text: 'Volte sempre!',
+                timer: 1500,
+                showConfirmButton: false,
+                didOpen: () => {
+                    document.querySelector('.swal2-container').style.zIndex = '9999999';
+                }
+            });
+            
+            atualizarInterfaceUsuario(null);
+            
+            document.getElementById('header').style.display = 'block';
+            document.getElementById('inicio').style.display = 'none';
+            document.getElementById('cartPage').style.display = 'none';
+            document.getElementById('checkoutPage').style.display = 'none';
+            
+            restaurarInfoCapa();
+        })
+        .catch(() => {
+            Swal.fire({
+                icon: 'error',
+                title: 'Erro',
+                text: 'Erro ao fazer logout',
+                confirmButtonColor: '#0066cc',
+                didOpen: () => {
+                    document.querySelector('.swal2-container').style.zIndex = '9999999';
+                }
+            });
+        });
+}
+
+async function carregarDadosUsuario(uid) {
+    try {
+        const docRef = window.doc(window.db, 'clientes', uid);
+        const docSnap = await window.getDoc(docRef);
+        
+        if (docSnap.exists()) {
+            const dados = docSnap.data();
+            const nomeInput = document.getElementById('checkoutName');
+            const phoneInput = document.getElementById('checkoutPhone');
+            const addressInput = document.getElementById('checkoutAddress');
+            
+            if (nomeInput) nomeInput.value = dados.nome || '';
+            if (phoneInput) phoneInput.value = dados.telefone || '';
+            
+            if (dados.enderecos && dados.enderecos.length > 0 && addressInput) {
+                const idx = dados.enderecoSelecionado || 0;
+                addressInput.value = dados.enderecos[idx];
+            }
+        }
+    } catch (error) {
+        console.error('Erro ao carregar dados:', error);
+    }
+}
+
+async function mostrarHistorico() {
+    if (!currentUser) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Atenção',
+            text: 'Faça login primeiro',
+            confirmButtonColor: '#0066cc',
+            didOpen: () => {
+                document.querySelector('.swal2-container').style.zIndex = '9999999';
+            }
+        });
+        return;
+    }
+    
+    try {
+        const pedidosRef = window.collection(window.db, 'pedidos');
+        const q = window.query(
+            pedidosRef,
+            window.where('uid', '==', currentUser.uid)
+        );
+        
+        const querySnapshot = await window.getDocs(q);
+        
+        if (querySnapshot.empty) {
+            Swal.fire({
+                icon: 'info',
+                title: 'Sem pedidos',
+                text: 'Você ainda não fez nenhum pedido',
+                confirmButtonColor: '#0066cc',
+                didOpen: () => {
+                    document.querySelector('.swal2-container').style.zIndex = '9999999';
+                }
+            });
+            return;
+        }
+        
+        let pedidos = [];
+        querySnapshot.forEach((doc) => {
+            pedidos.push({
+                id: doc.id,
+                ...doc.data()
+            });
+        });
+        
+        pedidos.sort((a, b) => new Date(b.dataPedido) - new Date(a.dataPedido));
+        
+        let html = '<div style="max-height: 500px; overflow-y: auto; padding: 10px;">';
+        
+        pedidos.forEach((pedido, index) => {
+            const data = pedido.dataPedido ? new Date(pedido.dataPedido).toLocaleDateString('pt-BR') : 'Data não disponível';
+            const hora = pedido.dataPedido ? new Date(pedido.dataPedido).toLocaleTimeString('pt-BR') : '';
+            const total = pedido.total ? parseFloat(pedido.total).toFixed(2) : '0.00';
+            const endereco = pedido.endereco || 'Endereço não informado';
+            const formaEntrega = pedido.formaEntrega || 'delivery';
+            let formaPagamento = pedido.formaPagamento || 'não informado';
+            
+            if (formaPagamento.includes('Troco')) {
+                formaPagamento = formaPagamento;
+            } else if (formaPagamento === 'Dinheiro' || formaPagamento.includes('Dinheiro')) {
+                formaPagamento = 'Dinheiro';
+            } else if (formaPagamento === 'Pix') {
+                formaPagamento = 'Pix';
+            } else if (formaPagamento === 'Cartão') {
+                formaPagamento = 'Cartão';
+            }
+            
+            const itens = pedido.itens || [];
+            const observacoes = pedido.observacoes || '';
+            
+            let itensHtml = '';
+            itens.forEach(item => {
+                const preco = item.preco || 0;
+                const quantidade = item.quantidade || 0;
+                const itemTotal = (preco * quantidade).toFixed(2);
+                itensHtml += `
+                    <div style="display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px dashed #eee;">
+                        <span>${quantidade}x ${item.nome || 'Item'}</span>
+                        <span>R$ ${itemTotal}</span>
+                    </div>
+                `;
+            });
+            
+            html += `
+                <div style="background: white; border-radius: 10px; margin-bottom: 15px; border: 1px solid #e0e0e0; overflow: hidden;">
+                    <div onclick="togglePedido('${index}')" style="padding: 15px; background: #f8f9fa; cursor: pointer; display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <span style="background: #0066cc; color: white; padding: 3px 10px; border-radius: 15px; font-size: 12px; font-weight: bold;">#${pedido.pedidoNumero || pedido.id.slice(-6)}</span>
+                            <span style="margin-left: 10px; color: #666;">${data} - ${hora}</span>
+                        </div>
+                        <div>
+                            <span style="font-weight: bold; color: #28a745;">R$ ${total}</span>
+                            <i class="fas fa-chevron-down" style="margin-left: 10px; color: #0066cc;" id="icone-${index}"></i>
+                        </div>
+                    </div>
+                    <div id="pedido-${index}" style="display: none; padding: 15px; border-top: 1px solid #e0e0e0;">
+                        <div style="margin-bottom: 10px;">
+                            <strong><i class="fas fa-map-marker-alt" style="color: #0066cc;"></i> Endereço:</strong>
+                            <p style="margin: 5px 0 0 20px;">${endereco}</p>
+                        </div>
+                        <div style="margin-bottom: 10px;">
+                            <strong><i class="fas fa-truck" style="color: #0066cc;"></i> Entrega:</strong>
+                            <p style="margin: 5px 0 0 20px;">${formaEntrega === 'delivery' ? 'Entrega em Casa' : 'Retirar no Local'}</p>
+                        </div>
+                        <div style="margin-bottom: 10px;">
+                            <strong><i class="fas fa-credit-card" style="color: #0066cc;"></i> Pagamento:</strong>
+                            <p style="margin: 5px 0 0 20px;">${formaPagamento}</p>
+                        </div>
+                        ${observacoes ? `
+                        <div style="margin-bottom: 10px;">
+                            <strong><i class="fas fa-comment" style="color: #0066cc;"></i> Observações:</strong>
+                            <p style="margin: 5px 0 0 20px;">${observacoes}</p>
+                        </div>
+                        ` : ''}
+                        <div style="margin-bottom: 10px;">
+                            <strong><i class="fas fa-shopping-bag" style="color: #0066cc;"></i> Itens:</strong>
+                            <div style="margin: 5px 0 0 20px;">
+                                ${itensHtml}
+                            </div>
+                        </div>
+                        <button onclick="repetirPedido('${pedido.id}')" style="width: 100%; margin-top: 10px; padding: 10px; background: #28a745; color: white; border: none; border-radius: 5px; font-weight: bold; cursor: pointer;">
+                            <i class="fas fa-redo-alt"></i> Pedir Novamente
+                        </button>
+                    </div>
+                </div>
+            `;
+        });
+        
+        html += '</div>';
+        
+        Swal.fire({
+            title: 'Histórico de Pedidos',
+            html: html,
+            width: 600,
+            showConfirmButton: false,
+            showCloseButton: true,
+            didOpen: () => {
+                document.querySelector('.swal2-container').style.zIndex = '9999999';
+            }
+        });
+        
+    } catch (error) {
+        console.error('❌ ERRO DETALHADO:', error);
+        Swal.fire({
+            icon: 'error',
+            title: 'Erro',
+            text: 'Erro ao carregar histórico: ' + error.message,
+            confirmButtonColor: '#0066cc',
+            didOpen: () => {
+                document.querySelector('.swal2-container').style.zIndex = '9999999';
+            }
+        });
+    }
+}
+
+function togglePedido(index) {
+    const pedidoDiv = document.getElementById(`pedido-${index}`);
+    const icone = document.getElementById(`icone-${index}`);
+    
+    if (pedidoDiv && icone) {
+        if (pedidoDiv.style.display === 'none') {
+            pedidoDiv.style.display = 'block';
+            icone.className = 'fas fa-chevron-up';
+        } else {
+            pedidoDiv.style.display = 'none';
+            icone.className = 'fas fa-chevron-down';
+        }
+    }
+}
+
+window.repetirPedido = async function(pedidoId) {
+    try {
+        const docRef = window.doc(window.db, 'pedidos', pedidoId);
+        const docSnap = await window.getDoc(docRef);
+        
+        if (!docSnap.exists()) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Erro',
+                text: 'Pedido não encontrado',
+                confirmButtonColor: '#0066cc',
+                didOpen: () => {
+                    document.querySelector('.swal2-container').style.zIndex = '9999999';
+                }
+            });
+            return;
+        }
+        
+        const p = docSnap.data();
+        
+        if (typeof cart !== 'undefined') {
+            cart.length = 0;
+        }
+        
+        if (p.itens && Array.isArray(p.itens)) {
+            p.itens.forEach(item => {
+                // Tenta encontrar o produto original para pegar o preço ATUALIZADO
+                const produtoOriginal = window.produtos?.find(prod => prod.id === item.id);
+                
+                if (produtoOriginal && typeof cart !== 'undefined') {
+                    // Adiciona ao carrinho com o preço atual do sistema
+                    cart.push({
+                        ...produtoOriginal,
+                        quantidade: item.quantidade || 1
+                    });
+                } else {
+                    // Se não encontrar o produto original (ex: removido), mantém o do pedido mas avisa
+                    cart.push({
+                        id: item.id,
+                        nome: item.nome || 'Produto',
+                        preco: item.preco || 0,
+                        quantidade: item.quantidade || 1,
+                        imagem: item.imagem || 'images/default.png',
+                        categoria: item.categoria || 'Outros',
+                        descricao: item.descricao || ''
+                    });
+                }
+            });
+        }
+        
+        if (typeof window.updateCartPage === 'function') {
+            window.updateCartPage();
+        }
+        if (typeof window.updateCartIcon === 'function') {
+            window.updateCartIcon();
+        }
+        
+        Swal.fire({
+            icon: 'success',
+            title: 'Itens adicionados!',
+            text: 'Os itens foram adicionados ao seu carrinho',
+            timer: 1500,
+            showConfirmButton: false,
+            didOpen: () => {
+                document.querySelector('.swal2-container').style.zIndex = '9999999';
+            }
+        }).then(() => {
+            if (typeof window.showCartPage === 'function') {
+                window.showCartPage();
+            }
+        });
+        
+    } catch (error) {
+        console.error('❌ Erro ao repetir pedido:', error);
+        Swal.fire({
+            icon: 'error',
+            title: 'Erro',
+            text: 'Erro ao repetir pedido: ' + error.message,
+            confirmButtonColor: '#0066cc',
+            didOpen: () => {
+                document.querySelector('.swal2-container').style.zIndex = '9999999';
+            }
+        });
+    }
+};
+
+async function mostrarDados() {
+    if (!currentUser) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Atenção',
+            text: 'Faça login primeiro',
+            confirmButtonColor: '#0066cc',
+            didOpen: () => {
+                document.querySelector('.swal2-container').style.zIndex = '9999999';
+            }
+        });
+        return;
+    }
+    
+    try {
+        const docRef = window.doc(window.db, 'clientes', currentUser.uid);
+        let docSnap = await window.getDoc(docRef);
+        
+        if (!docSnap.exists()) {
+            await window.setDoc(docRef, { 
+                nome: '', 
+                email: currentUser.email, 
+                telefone: '' 
+            });
+            docSnap = await window.getDoc(docRef);
+        }
+        
+        const dados = docSnap.data();
+        
+        const { value: formValues } = await Swal.fire({
+            title: 'Meus Dados',
+            html: `
+                <div style="margin-bottom: 20px; text-align: left;">
+                    <label style="display: block; margin-bottom: 8px; color: #333; font-weight: 500;">Nome Completo</label>
+                    <input type="text" id="editNome" value="${dados.nome || ''}" placeholder="Seu nome" style="width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 8px; box-sizing: border-box; font-size: 14px;">
+                </div>
+                <div style="margin-bottom: 20px; text-align: left;">
+                    <label style="display: block; margin-bottom: 8px; color: #333; font-weight: 500;">E-mail</label>
+                    <input type="email" id="editEmail" value="${currentUser.email}" placeholder="seu@email.com" style="width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 8px; box-sizing: border-box; background: #f5f5f5; font-size: 14px;" readonly>
+                </div>
+                <div style="margin-bottom: 10px; text-align: left;">
+                    <label style="display: block; margin-bottom: 8px; color: #333; font-weight: 500;">Telefone</label>
+                    <input type="tel" id="editTelefone" value="${dados.telefone || ''}" placeholder="(11) 99999-9999" style="width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 8px; box-sizing: border-box; font-size: 14px;">
+                </div>
+            `,
+            showCancelButton: true,
+            confirmButtonText: 'Salvar',
+            cancelButtonText: 'Cancelar',
+            confirmButtonColor: '#0066cc',
+            width: '450px',
+            padding: '25px',
+            scrollbarPadding: false,
+            backdrop: true,
+            allowOutsideClick: true,
+            didOpen: () => {
+                const container = document.querySelector('.swal2-container');
+                if (container) {
+                    container.style.overflow = 'hidden';
+                    container.style.paddingRight = '0';
+                    container.style.display = 'flex';
+                    container.style.justifyContent = 'center';
+                    container.style.alignItems = 'center';
+                }
+                const popup = document.querySelector('.swal2-popup');
+                if (popup) {
+                    popup.style.overflow = 'visible';
+                    popup.style.maxHeight = 'none';
+                    popup.style.margin = '0 auto';
+                }
+                const htmlContainer = document.querySelector('.swal2-html-container');
+                if (htmlContainer) {
+                    htmlContainer.style.overflow = 'visible';
+                    htmlContainer.style.maxHeight = 'none';
+                    htmlContainer.style.padding = '0';
+                }
+                
+                // Formatação de Telefone no Editar Dados
+                const editPhone = document.getElementById('editTelefone');
+                if (editPhone) {
+                    editPhone.addEventListener('input', (e) => {
+                        let value = e.target.value.replace(/\D/g, '');
+                        if (value.length > 11) value = value.slice(0, 11);
+                        if (value.length > 10) {
+                            e.target.value = `(${value.slice(0, 2)}) ${value.slice(2, 7)}-${value.slice(7)}`;
+                        } else if (value.length > 6) {
+                            e.target.value = `(${value.slice(0, 2)}) ${value.slice(2, 6)}-${value.slice(6)}`;
+                        } else if (value.length > 2) {
+                            e.target.value = `(${value.slice(0, 2)}) ${value.slice(2)}`;
+                        } else if (value.length > 0) {
+                            e.target.value = `(${value}`;
+                        }
+                    });
+                }
+            },
+            preConfirm: () => {
+                const nome = document.getElementById('editNome').value;
+                const telefone = document.getElementById('editTelefone').value;
+                
+                if (!nome || !telefone) {
+                    Swal.showValidationMessage('Nome e telefone são obrigatórios');
+                    return false;
+                }
+                
+                return { nome, telefone };
+            }
+        });
+        
+        if (formValues) {
+            await window.setDoc(docRef, { 
+                nome: formValues.nome, 
+                telefone: formValues.telefone 
+            }, { merge: true });
+            
+            const nomeInput = document.getElementById('checkoutName');
+            const phoneInput = document.getElementById('checkoutPhone');
+            if (nomeInput) nomeInput.value = formValues.nome;
+            if (phoneInput) phoneInput.value = formValues.telefone;
+            
+            Swal.fire({
+                icon: 'success',
+                title: 'Dados atualizados!',
+                timer: 2000,
+                showConfirmButton: false
+            });
+        }
+        
+    } catch (error) {
+        console.error('Erro ao mostrar dados:', error);
+        Swal.fire({
+            icon: 'error',
+            title: 'Erro',
+            text: 'Não foi possível carregar os dados',
+            confirmButtonColor: '#0066cc'
+        });
+    }
+}
+
+async function mostrarEnderecos() {
+    if (!currentUser) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Atenção',
+            text: 'Faça login primeiro',
+            confirmButtonColor: '#0066cc'
+        });
+        return;
+    }
+    
+    try {
+        const docRef = window.doc(window.db, 'clientes', currentUser.uid);
+        let docSnap = await window.getDoc(docRef);
+        
+        if (!docSnap.exists()) {
+            await window.setDoc(docRef, { enderecos: [] });
+            docSnap = await window.getDoc(docRef);
+        }
+        
+        const dados = docSnap.data();
+        const enderecos = dados.enderecos || [];
+        const enderecoSelecionado = dados.enderecoSelecionado || 0;
+        
+        let enderecosHtml = '';
+        enderecos.forEach((end, i) => {
+            enderecosHtml += `
+                <div style="border: 2px solid ${i === enderecoSelecionado ? '#0066cc' : '#e0e0e0'}; border-radius: 10px; padding: 15px; margin-bottom: 10px; cursor: pointer; text-align: left;" onclick="selecionarEnderecoEFechar(${i})" id="endereco-${i}">
+                    <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                        <div style="flex: 1;">
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <span style="background: ${i === enderecoSelecionado ? '#0066cc' : '#e0e0e0'}; color: ${i === enderecoSelecionado ? 'white' : '#666'}; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">${i+1}</span>
+                                <strong style="color: #0066cc;">${i === enderecoSelecionado ? 'Endereço Principal' : `Endereço ${i+1}`}</strong>
+                            </div>
+                            <p style="margin: 8px 0 0 34px; color: #333; font-size: 14px; line-height: 1.4;">${end}</p>
+                        </div>
+                        <button onclick="removerEndereco(${i}); event.stopPropagation();" style="background: #dc3545; color: white; border: none; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-left: 10px;" title="Remover">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+        });
+        
+        const { value: formValues } = await Swal.fire({
+            title: 'Meus Endereços',
+            html: `
+                <div class="lista-enderecos-scroll">
+                    ${enderecos.length === 0 ? 
+                        '<p style="text-align: center; color: #666; padding: 30px;">Nenhum endereço cadastrado</p>' : 
+                        enderecosHtml
+                    }
+                </div>
+                <div style="margin-top: 20px; padding-top: 20px; border-top: 2px solid #e0e0e0;">
+                    <h4 style="margin-bottom: 15px; color: #0066cc;">Adicionar Novo Endereço</h4>
+                    <input type="text" id="rua" placeholder="Rua" style="width: 100%; padding: 12px; margin-bottom: 10px; border: 2px solid #e0e0e0; border-radius: 8px; box-sizing: border-box;">
+                    <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                        <input type="text" id="numero" placeholder="Número" style="flex: 1; padding: 12px; border: 2px solid #e0e0e0; border-radius: 8px; box-sizing: border-box;">
+                        <input type="text" id="complemento" placeholder="Complemento" style="flex: 2; padding: 12px; border: 2px solid #e0e0e0; border-radius: 8px; box-sizing: border-box;">
+                    </div>
+                    <input type="text" id="bairro" placeholder="Bairro" style="width: 100%; padding: 12px; margin-bottom: 10px; border: 2px solid #e0e0e0; border-radius: 8px; box-sizing: border-box;">
+                    <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                        <input type="text" id="cidade" placeholder="Cidade" value="São Paulo" style="flex: 2; padding: 12px; border: 2px solid #e0e0e0; border-radius: 8px; box-sizing: border-box;">
+                        <input type="text" id="cep" placeholder="CEP" style="flex: 1; padding: 12px; border: 2px solid #e0e0e0; border-radius: 8px; box-sizing: border-box;">
+                    </div>
+                    <div style="display: flex; gap: 20px; margin-bottom: 10px;">
+                        <label><input type="radio" name="tipoEndereco" value="Residencial" checked> Residencial</label>
+                        <label><input type="radio" name="tipoEndereco" value="Comercial"> Comercial</label>
+                    </div>
+                </div>
+            `,
+            showCancelButton: true,
+            confirmButtonText: 'Adicionar',
+            cancelButtonText: 'Fechar',
+            confirmButtonColor: '#28a745',
+            width: 550,
+            padding: '20px',
+            scrollbarPadding: false,
+            backdrop: true,
+            allowOutsideClick: true,
+            didOpen: () => {
+                const container = document.querySelector('.swal2-container');
+                if (container) {
+                    container.style.overflow = 'hidden';
+                    container.style.paddingRight = '0';
+                }
+                const popup = document.querySelector('.swal2-popup');
+                if (popup) {
+                    popup.style.overflow = 'visible';
+                    popup.style.maxHeight = 'none';
+                }
+            },
+            preConfirm: () => {
+                const rua = document.getElementById('rua')?.value;
+                const numero = document.getElementById('numero')?.value;
+                
+                if (rua && numero) {
+                    const complemento = document.getElementById('complemento')?.value;
+                    const bairro = document.getElementById('bairro')?.value;
+                    const cidade = document.getElementById('cidade')?.value;
+                    const cep = document.getElementById('cep')?.value;
+                    const tipo = document.querySelector('input[name="tipoEndereco"]:checked')?.value;
+                    
+                    let novoEndereco = `${rua}, ${numero}`;
+                    if (complemento) novoEndereco += ` - ${complemento}`;
+                    if (bairro) novoEndereco += `, ${bairro}`;
+                    if (cidade) novoEndereco += `, ${cidade}`;
+                    if (cep) novoEndereco += ` - CEP: ${cep}`;
+                    novoEndereco += ` (${tipo})`;
+                    
+                    return { novoEndereco };
+                }
+                return null;
+            }
+        });
+        
+        if (formValues && formValues.novoEndereco) {
+            enderecos.push(formValues.novoEndereco);
+            await window.setDoc(docRef, { enderecos: enderecos }, { merge: true });
+            
+            Swal.fire({
+                icon: 'success',
+                title: 'Endereço adicionado!',
+                timer: 1500,
+                showConfirmButton: false
+            });
+            
+            mostrarEnderecos();
+        }
+        
+    } catch (error) {
+        console.error('Erro ao mostrar endereços:', error);
+        Swal.fire({
+            icon: 'error',
+            title: 'Erro',
+            text: 'Não foi possível carregar os endereços',
+            confirmButtonColor: '#0066cc'
+        });
+    }
+}
+
+async function selecionarEndereco(index) {
+    try {
+        const docRef = window.doc(window.db, 'clientes', currentUser.uid);
+        await window.setDoc(docRef, { enderecoSelecionado: index }, { merge: true });
+        
+        const docSnap = await window.getDoc(docRef);
+        const dados = docSnap.data();
+        const addressInput = document.getElementById('checkoutAddress');
+        if (addressInput) addressInput.value = dados.enderecos[index];
+        
+        dados.enderecos.forEach((_, i) => {
+            const el = document.getElementById(`endereco-${i}`);
+            if (el) el.style.borderColor = i === index ? '#0066cc' : '#e0e0e0';
+        });
+        
+        Swal.fire({
+            icon: 'success',
+            title: 'Endereço selecionado!',
+            text: 'Este endereço será usado no checkout',
+            timer: 1500,
+            showConfirmButton: false
+        });
+        
+    } catch (error) {
+        console.error('Erro ao selecionar endereço:', error);
+        Swal.fire({
+            icon: 'error',
+            title: 'Erro',
+            text: 'Não foi possível selecionar o endereço',
+            confirmButtonColor: '#0066cc'
+        });
+    }
+}
+
+async function removerEndereco(index) {
+    try {
+        const docRef = window.doc(window.db, 'clientes', currentUser.uid);
+        const docSnap = await window.getDoc(docRef);
+        const dados = docSnap.data();
+        let enderecos = dados.enderecos || [];
+        
+        if (enderecos.length <= 1) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Atenção',
+                text: 'Você precisa de pelo menos um endereço',
+                confirmButtonColor: '#0066cc'
+            });
+            return;
+        }
+        
+        enderecos.splice(index, 1);
+        
+        let enderecoSelecionado = dados.enderecoSelecionado || 0;
+        if (enderecoSelecionado >= enderecos.length) {
+            enderecoSelecionado = 0;
+        } else if (enderecoSelecionado > index) {
+            enderecoSelecionado--;
+        }
+        
+        await window.setDoc(docRef, { 
+            enderecos: enderecos,
+            enderecoSelecionado: enderecoSelecionado
+        }, { merge: true });
+        
+        if (enderecos.length > 0) {
+            const addressInput = document.getElementById('checkoutAddress');
+            if (addressInput) addressInput.value = enderecos[enderecoSelecionado];
+        }
+        
+        Swal.fire({
+            icon: 'success',
+            title: 'Endereço removido!',
+            timer: 1500,
+            showConfirmButton: false
+        });
+        
+        mostrarEnderecos();
+        
+    } catch (error) {
+        console.error('Erro ao remover endereço:', error);
+        Swal.fire({
+            icon: 'error',
+            title: 'Erro',
+            text: 'Não foi possível remover o endereço',
+            confirmButtonColor: '#0066cc'
+        });
+    }
+}
+
+function mostrarAlterarSenha() {
+    if (!currentUser) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Atenção',
+            text: 'Faça login primeiro',
+            confirmButtonColor: '#0066cc'
+        });
+        return;
+    }
+    
+    Swal.fire({
+        title: 'Alterar Senha',
+        html: `
+            <div style="margin-bottom: 15px;">
+                <input type="password" id="novaSenha" class="swal2-input" placeholder="Nova senha (mínimo 6 caracteres)">
+            </div>
+            <div>
+                <input type="password" id="confirmSenha" class="swal2-input" placeholder="Confirmar nova senha">
+            </div>
+        `,
+        showCancelButton: true,
+        confirmButtonText: 'Alterar',
+        cancelButtonText: 'Cancelar',
+        confirmButtonColor: '#0066cc',
+        width: 500,
+        padding: '20px',
+        didOpen: () => {
+            const container = document.querySelector('.swal2-container');
+            if (container) {
+                container.style.overflow = 'hidden';
+            }
+        },
+        preConfirm: async () => {
+            const nova = document.getElementById('novaSenha').value;
+            const confirma = document.getElementById('confirmSenha').value;
+            
+            if (nova.length < 6) {
+                Swal.showValidationMessage('Mínimo 6 caracteres');
+                return false;
+            }
+            if (nova !== confirma) {
+                Swal.showValidationMessage('As senhas não coincidem');
+                return false;
+            }
+            
+            try {
+                await window.updatePassword(currentUser, nova);
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Senha alterada!',
+                    timer: 1500,
+                    showConfirmButton: false
+                });
+            } catch (error) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Erro',
+                    text: 'Não foi possível alterar a senha',
+                    confirmButtonColor: '#0066cc'
+                });
+            }
+        }
+    });
+}
+
+function confirmarExclusaoConta() {
+    if (!currentUser) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Atenção',
+            text: 'Faça login primeiro',
+            confirmButtonColor: '#0066cc'
+        });
+        return;
+    }
+    
+    Swal.fire({
+        title: 'Excluir conta?',
+        text: 'Esta ação NÃO pode ser desfeita! Todos os dados serão apagados permanentemente.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc3545',
+        confirmButtonText: 'Sim, excluir',
+        cancelButtonText: 'Cancelar'
+    }).then(async (result) => {
+        if (result.isConfirmed) {
+            await excluirConta();
+        }
+    });
+}
+
+async function excluirConta() {
+    try {
+        Swal.fire({
+            title: 'Excluindo conta...',
+            allowOutsideClick: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+        
+        const q = window.query(
+            window.collection(window.db, 'pedidos'), 
+            window.where('uid', '==', currentUser.uid)
+        );
+        const querySnapshot = await window.getDocs(q);
+        
+        const deletePromises = [];
+        querySnapshot.forEach(doc => {
+            deletePromises.push(window.deleteDoc(doc.ref));
+        });
+        await Promise.all(deletePromises);
+        
+        await window.deleteDoc(window.doc(window.db, 'clientes', currentUser.uid));
+        await window.deleteUser(currentUser);
+        
+        Swal.fire({
+            icon: 'success',
+            title: 'Conta excluída',
+            text: 'Sua conta foi removida com sucesso',
+            timer: 2000,
+            showConfirmButton: false
+        });
+        
+        currentUser = null;
+        window.currentUser = null;
+        atualizarInterfaceUsuario(null);
+        
+        document.getElementById('header').style.display = 'block';
+        document.getElementById('inicio').style.display = 'none';
+        document.getElementById('cartPage').style.display = 'none';
+        document.getElementById('checkoutPage').style.display = 'none';
+        
+        restaurarInfoCapa();
+        
+    } catch (error) {
+        console.error('Erro ao excluir conta:', error);
+        Swal.fire({
+            icon: 'error',
+            title: 'Erro',
+            text: 'Não foi possível excluir a conta. Faça login novamente.',
+            confirmButtonColor: '#0066cc'
+        });
+    }
+}
+
+function continuarCheckoutConvidado() {
+    Swal.close();
+    
+    const loginModal = document.getElementById('loginModal');
+    if (loginModal) loginModal.remove();
+    
+    const recuperarModal = document.getElementById('recuperarModal');
+    if (recuperarModal) recuperarModal.remove();
+    
+    document.getElementById('cartPage').style.display = 'none';
+    document.getElementById('checkoutPage').style.display = 'block';
+    document.getElementById('checkoutInfoSection').style.display = 'block';
+    document.getElementById('paymentSection').style.display = 'none';
+    document.getElementById('confirmSection').style.display = 'none';
+    
+    const step1 = document.getElementById('step1');
+    const step2 = document.getElementById('step2');
+    const step3 = document.getElementById('step3');
+    
+    if (step1) step1.classList.add('active');
+    if (step2) step2.classList.remove('active');
+    if (step3) step3.classList.remove('active');
+    
+    if (typeof window.setupScheduleInput === 'function') {
+        setTimeout(window.setupScheduleInput, 100);
+    }
+}
+
+window.proceedToCheckout = async function() {
+    if (typeof cart === 'undefined' || cart.length === 0) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Atenção',
+            text: 'Carrinho vazio',
+            confirmButtonColor: '#0066cc',
+            didOpen: () => {
+                document.querySelector('.swal2-container').style.zIndex = '9999999';
+            }
+        });
+        return;
+    }
+    
+    if (!currentUser) {
+        Swal.fire({
+            title: 'Finalizar Compra',
+            html: `
+                <div style="text-align: center;">
+                    <button onclick="mostrarModalLogin(); Swal.close();" style="width: 100%; padding: 10px; margin-bottom: 10px; background: #0066cc; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 14px;">Fazer Login</button>
+                    <button onclick="mostrarModalLogin(); setTimeout(() => mudarAba('registro'), 100); Swal.close();" style="width: 100%; padding: 10px; margin-bottom: 10px; background: #28a745; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 14px;">Criar Conta</button>
+                    <button onclick="continuarCheckoutConvidado()" style="width: 100%; padding: 10px; background: #6c757d; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 14px;">Continuar sem Login</button>
+                </div>
+            `,
+            showConfirmButton: false,
+            showCloseButton: true,
+            width: '320px',
+            padding: '20px',
+            didOpen: () => {
+                document.querySelector('.swal2-container').style.zIndex = '9999999';
+                const popup = document.querySelector('.swal2-popup');
+                if (popup) {
+                    popup.style.width = '320px';
+                    popup.style.maxWidth = '90%';
+                    popup.style.padding = '20px';
+                }
+            }
+        });
+        return;
+    }
+    
+    if (opcaoSelecionada === 'sim') {
+        const galaoValidity = document.getElementById('galaoValidity')?.value;
+        if (!galaoValidity) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Atenção',
+                text: 'Informe a data de validade do seu galão',
+                confirmButtonColor: '#0066cc',
+                didOpen: () => {
+                    document.querySelector('.swal2-container').style.zIndex = '9999999';
+                }
+            });
+            return;
+        }
+    }
+    
+    if (opcaoSelecionada === 'naoTenho') {
+        const temGalaoCompleto = verificarGalaoCompleto();
+        if (!temGalaoCompleto) {
+            recomendarGalaoCompleto();
+            return;
+        }
+    }
+    
+    if (currentUser) {
+        const enderecoEscolhido = await mostrarOpcoesEndereco();
+        if (enderecoEscolhido) {
+            const addressInput = document.getElementById('checkoutAddress');
+            if (addressInput) addressInput.value = enderecoEscolhido;
+        }
+    }
+    
+    continuarCheckoutConvidado();
+};
+
+function atualizarInterfaceUsuario(user) {
+    const userBtn = document.getElementById('userBtn');
+    const loginBtn = document.getElementById('loginBtn');
+    const dropdownEmail = document.getElementById('dropdownUserEmail');
+    
+    if (!userBtn || !loginBtn) return;
+    
+    if (user) {
+        userBtn.style.display = 'flex';
+        loginBtn.style.display = 'none';
+        if (dropdownEmail) dropdownEmail.textContent = user.email;
+    } else {
+        userBtn.style.display = 'none';
+        loginBtn.style.display = 'flex';
+        const userDropdown = document.getElementById('userDropdown');
+        if (userDropdown) userDropdown.style.display = 'none';
+    }
+}
+
+if (window.auth) {
+    window.auth.onAuthStateChanged(async (user) => {
+        currentUser = user;
+        window.currentUser = user;
+        
+        if (user) {
+            await carregarDadosUsuario(user.uid);
+            iniciarLogoutTimer();
+        }
+        atualizarInterfaceUsuario(user);
+        setTimeout(restaurarInfoCapa, 500);
+        setTimeout(inicializarBotoesPrimeiraCompra, 500);
+    });
+} else {
+    console.error('❌ auth não encontrado!');
+}
+
+window.mostrarModalLogin = mostrarModalLogin;
+window.mudarAba = mudarAba;
+window.mostrarRecuperarSenha = mostrarRecuperarSenha;
+window.enviarRecuperacao = enviarRecuperacao;
+window.fazerLogin = fazerLogin;
+window.registrarUsuario = registrarUsuario;
+window.fazerLogout = fazerLogout;
+window.mostrarHistorico = mostrarHistorico;
+window.mostrarDados = mostrarDados;
+window.mostrarEnderecos = mostrarEnderecos;
+window.mostrarAlterarSenha = mostrarAlterarSenha;
+window.confirmarExclusaoConta = confirmarExclusaoConta;
+window.continuarCheckoutConvidado = continuarCheckoutConvidado;
+window.selecionarEndereco = selecionarEndereco;
+window.selecionarEnderecoEFechar = async function(index) {
+    await selecionarEndereco(index);
+    Swal.close();
+};
+window.removerEndereco = removerEndereco;
+window.irParaGalaoCompleto = irParaGalaoCompleto;
+window.togglePedido = togglePedido;
+window.repetirPedido = repetirPedido;
+window.abrirMenuMobile = abrirMenuMobile;
+window.fecharMenuMobile = fecharMenuMobile;
+window.selecionarOpcao = selecionarOpcao;
+window.verificarGalaoCompleto = verificarGalaoCompleto;
